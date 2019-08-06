@@ -8,7 +8,7 @@ data_root <- "/Users/admin/tmp/pumba/"
 data_cache <- "/Users/admin/tmp/datamining_pumba/"
 
 sel_datasets <- c("1559132129057") #NULL #c("1559132129057")
-#nr_proteins <- 100
+nr_proteins <- 1000
 
 # used to get the charge for each protein
 fasta_seq_path <- "/Users/admin/Work/PAF/projects/pumba/data/fasta/20170609_UP000005640_9606.csv"
@@ -25,10 +25,10 @@ for(dataset in datasets){
   # look only at selected datasets
   if(length(sel_datasets) > 0 && ! (dataset$id %in% sel_datasets)) next
 
-  # create the folder for the dataset if necessary
-  dataset_name <- paste0(dataset$id, '_', dataset$sample, '_', dataset$name)
-  dataset_cache_path <- paste0(data_cache, dataset_name)
-  if(! dir.exists(dataset_cache_path)) dir.create(dataset_cache_path)
+    # create the folder for the dataset if necessary
+    dataset_name <- paste0(dataset$id, '_', dataset$sample, '_', dataset$name)
+    dataset_cache_path <- paste0(data_cache, dataset_name)
+    if(! dir.exists(dataset_cache_path)) dir.create(dataset_cache_path)
   
     # load normalized protein groups file
     dataset_pg_path <- paste0(data_root, dataset$massFitResult$proteinGroupsPath)
@@ -42,6 +42,7 @@ for(dataset in datasets){
     closest_peak_masses <- c()
     charges <- c()
     charges_by_length <- c()
+    max_ints <- c()
     
     # loop over all proteins
     nr_prot_loop <- if(! exists("nr_proteins")) length(first_protein_acs) else nr_proteins
@@ -50,6 +51,8 @@ for(dataset in datasets){
       
       # select one protein
       protein <- protein_groups[k,]
+      prot_ints <- protein[grep("Intensity", colnames(protein))]
+      max_int <- which(max(prot_ints) == prot_ints)
       protein_ac <- first_protein_acs[k]
       
       # load protein from cache or get it from the backend
@@ -141,6 +144,7 @@ for(dataset in datasets){
         this_charge <- charge(seq, pH=7, pKscale="EMBOSS")
         charges <- c(charges, this_charge)
         charges_by_length <- c(charges_by_length, this_charge / nchar(seq))
+        max_ints <- c(max_ints, max_int)
       }
       
       # plot(mass, ints, type="l", main=protein_ac)
@@ -149,10 +153,10 @@ for(dataset in datasets){
       # text(mass[peaks_idx], ints[peaks_idx], labels=(round(peak_dists_log, digits = 2)), col="red", pos=4)
     }
     
-    peak_dists <- data.frame(theo_weights, closest_peak_dists, protein_acs, closest_peak_masses, charges, charges_by_length)
+    peak_dists <- data.frame(theo_weights, closest_peak_dists, protein_acs, closest_peak_masses, charges, charges_by_length, max_ints)
     peak_dists$color <- "neutral"
-    peak_dists$color[peak_dists$charges > 5] <- "pos"
-    peak_dists$color[peak_dists$charges < -5] <- "neg"
+    peak_dists$color[peak_dists$max_ints == 44] <- "pos"
+    #peak_dists$color[peak_dists$charges < -5] <- "neg"
     
     # peak_dists$color <- "neutral"
     # peak_dists$color[peak_dists$charges_by_length > 0.02] <- "pos"

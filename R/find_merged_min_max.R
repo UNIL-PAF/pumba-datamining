@@ -7,7 +7,7 @@ rm(list=ls())
 data_root <- "/Users/admin/tmp/pumba/"
 data_cache <- "/Users/admin/tmp/datamining_pumba/"
 
-sel_datasets <- c("1559132129057") #NULL #c("1559132129057")
+sel_samples <- c("HCT") #NULL #c("1559132129057")
 #nr_proteins <- 100
 
 # used to get the charge for each protein
@@ -18,19 +18,28 @@ fasta_seqs <- read.csv(file=fasta_seq_path)
 dataset_get <- GET("localhost:9000/dataset")
 datasets <- content(dataset_get)
 
+# get list of samples
+samples <- c()
+for(d in datasets){ if(! d$sample %in% samples) samples <- c(samples, d$sample) }
+
 # store results
 results <- list()
 
-for(dataset in datasets){
-  # look only at selected datasets
-  if(length(sel_datasets) > 0 && ! (dataset$id %in% sel_datasets)) next
-
-  # create the folder for the dataset if necessary
-  dataset_name <- paste0(dataset$id, '_', dataset$sample, '_', dataset$name)
-  dataset_cache_path <- paste0(data_cache, dataset_name)
-  if(! dir.exists(dataset_cache_path)) dir.create(dataset_cache_path)
+for(sample in samples){
+    # look only at selected datasets
+    if(length(sel_samples) > 0 && ! (sample %in% sel_samples)) next
   
-    # load normalized protein groups file
+    # create the folder for the dataset if necessary
+    dataset_cache_path <- paste0(data_cache, sample)
+    if(! dir.exists(dataset_cache_path)) dir.create(dataset_cache_path)
+  
+    # load normalized protein groups file of one dataset
+    for(d in datasets){ if(d$sample == sample){dataset <- d; break;} }
+    
+    # get the dataset ids for this sample
+    dataset_ids <- c()
+    for(d in datasets){ if(d$sample == sample) dataset_ids <- c(dataset_ids, d$id) }
+    
     dataset_pg_path <- paste0(data_root, dataset$massFitResult$proteinGroupsPath)
     protein_groups <- read.table(file=dataset_pg_path, sep="\t", header = TRUE)
     first_protein_acs <- unlist(lapply(strsplit(as.character(protein_groups$Majority.protein.IDs), ";"), function(x){x[1]}))
@@ -42,11 +51,12 @@ for(dataset in datasets){
     closest_peak_masses <- c()
     charges <- c()
     charges_by_length <- c()
+    pIs <- c()
     
     # loop over all proteins
     nr_prot_loop <- if(! exists("nr_proteins")) length(first_protein_acs) else nr_proteins
     for(k in 1:nr_prot_loop){
-      print(paste0(dataset$id, ': ', k, " of ", nr_prot_loop))
+      print(paste0(sample, ': ', k, " of ", nr_prot_loop))
       
       # select one protein
       protein <- protein_groups[k,]
@@ -59,7 +69,7 @@ for(dataset in datasets){
       if(file.exists(protein_cache_path)){
         load(protein_cache_path)
       }else{
-        protein_merge_get <- GET(paste0("http://localhost:9000/merge-protein/", protein_ac), query=list(dataSetsString=dataset$id))
+        protein_merge_get <- GET(paste0("http://localhost:9000/merge-protein/", protein_ac), query=list(dataSetsString=paste(dataset_ids, collapse=",")))
         protein_merge <- content(protein_merge_get)
         save(protein_merge, file=protein_cache_path)
       }
@@ -139,6 +149,8 @@ for(dataset in datasets){
         protein_acs <- c(protein_acs, protein_ac)
         closest_peak_masses <- c(closest_peak_masses, peaks_masses[closest_peak])
         this_charge <- charge(seq, pH=7, pKscale="EMBOSS")
+        this_pI <- pI(seq, pKscale = "EMBOSS")
+        pIs <- c(pIs, this_pI)
         charges <- c(charges, this_charge)
         charges_by_length <- c(charges_by_length, this_charge / nchar(seq))
       }
@@ -146,13 +158,18 @@ for(dataset in datasets){
       # plot(mass, ints, type="l", main=protein_ac)
       # abline(v=theo_weight, col="blue")
       # points(mass[peaks_idx], ints[peaks_idx], col="red")
-      # text(mass[peaks_idx], ints[peaks_idx], labels=(round(peak_dists_log, digits = 2)), col="red", pos=4)
+      # text(mass[peaks_idx], ints[peaks_idx], labels=(round(peak_dists_perc, digits = 2)), col="red", pos=4)
     }
     
-    peak_dists <- data.frame(theo_weights, closest_peak_dists, protein_acs, closest_peak_masses, charges, charges_by_length)
+    peak_dists <- data.frame(theo_weights, closest_peak_dists, protein_acs, closest_peak_masses, charges, charges_by_length, pIs)
+    
+    #peak_dists$color <- "neutral"
+    #peak_dists$color[peak_dists$charges > 5] <- "pos"
+    #peak_dists$color[peak_dists$charges < -5] <- "neg"
+    
     peak_dists$color <- "neutral"
-    peak_dists$color[peak_dists$charges > 5] <- "pos"
-    peak_dists$color[peak_dists$charges < -5] <- "neg"
+    peak_dists$color[peak_dists$pIs > 8] <- "pos"
+    peak_dists$color[peak_dists$pIs < 6] <- "neg"
     
     # peak_dists$color <- "neutral"
     # peak_dists$color[peak_dists$charges_by_length > 0.02] <- "pos"
@@ -163,14 +180,22 @@ for(dataset in datasets){
     #p <- p + geom_text(data=peak_dists[peak_dists$theo_weights > 200, ], aes(theo_weights, closest_peak_dists, label=protein_acs), srt=90, col="red", alpha=0.3)
     p <- p + xlim(0, 100)
     p <- p + ylim(-2, 2)
-    p <- p + scale_colour_manual(values=c("pos" = "green", "neg" = "red", "neutral" = "grey"))
+    p <- p + scale_colour_manual(values=c("pos" = "blue", "neg" = "orange", "neutral" = "grey"))
     p <- p + geom_hline(yintercept = 0)
+    p <- p + theme_bw()
+    p <- p + ggtitle(sample)
     print(p)
     
     # store the data in the results list
-    results[[dataset_name]] <- peak_dists
+    results[[sample]] <- peak_dists
 }
   
+
+
+
+
+
+
 # perc_diff = (obs / theo) - 1
 
   # protein_ac <- "O00754"
@@ -214,6 +239,18 @@ for(dataset in datasets){
 # max_int_slices <- unlist(apply(protein_groups[, int_cols], 1, function(x){which(x == max(x))}))
 # map_prot_ids <- which(first_protein_acs %in% protein_acs)
 # max_int_slices_2 <- max_int_slices[map_prot_ids]
+
+
+
+
+library(xml2)
+xml_data <- xml_ns_strip(read_xml("https://www.uniprot.org/uniprot/P12345.xml"))
+
+locations <- xml_find_all(xml_data, ".//location")
+locations <- locations[! is.na(xml_attr(locations, "evidence"))]
+xml_text(locations)
+
+
 
 
 
