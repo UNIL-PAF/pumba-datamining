@@ -1,25 +1,25 @@
 library(ggplot2)
+library(stringr)
 
 rm(list=ls())
 
-# location term
-location_term <- "membrane"
+no_glycosylation_label <- "no glycosylations"
+glycosylation_label <- "glycosylated"
 
 # load results
-res_path <- ("/Users/admin/tmp/datamining_pumba/results/res_1565182764.29958.RData")
+res_path <- ("/Users/admin/tmp/datamining_pumba/results/glyco_1565186109.93345.RData")
 load(res_path)
 
 for(sample in names(results)){
   
   peak_dists <- results[[sample]]
+  peak_dists$color <- no_glycosylation_label
+  peak_dists$color[peak_dists$glycosylations != ""] <- glycosylation_label
+  #peak_dists$color[str_count(peak_dists$glycosylations, ",") > 4] <- glycosylation_label
   
-  neg_location_term <- paste0("not ", location_term)
-  peak_dists$color <- neg_location_term
-  peak_dists$color[grep(location_term, peak_dists$location, ignore.case = TRUE)] <- location_term
-
   # colors
   col_vec <- c("grey", "red")
-  names(col_vec) <- c(neg_location_term, location_term)
+  names(col_vec) <- c(no_glycosylation_label, glycosylation_label)
   
   p <- ggplot(data=peak_dists, aes(theo_weights, closest_peak_dists, colour=color)) 
   p <- p + geom_point(alpha=0.2)

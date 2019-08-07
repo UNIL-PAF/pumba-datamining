@@ -33,3 +33,13 @@ get_locations <- function(uniprot_xml){
   locations <- locations[! is.na(xml_attr(locations, "evidence"))]
   unique(xml_text(locations))
 }
+
+
+# get glycosylation positions
+get_glycosylations <- function(uniprot_xml){
+  features <- xml_find_all(uniprot_xml, ".//feature")
+  glycosylations <- features[xml_attr(features, "type") == "glycosylation site"]
+  xml_attr(xml_children(xml_children(glycosylations)), "position")  
+}
+
+

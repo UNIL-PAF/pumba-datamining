@@ -6,7 +6,7 @@ rm(list=ls())
 
 # results
 res_path <- ("/Users/admin/tmp/datamining_pumba/results/")
-res_name <- "test_"
+res_name <- "glyco_"
 
 
 # internal library
@@ -43,6 +43,7 @@ for(sample in samples){
     charges_by_length <- c()
     pIs <- c()
     locations <- c()
+    glycosylations <- c()
     
     # loop over all proteins
     nr_prot_loop <- if(! exists("nr_proteins")) length(first_protein_acs) else nr_proteins
@@ -103,10 +104,13 @@ for(sample in samples){
         # info from uniprot
         uniprot_xml <- get_uniprot_xml(protein_ac)
         location <- NA
+        glycosylation <- NA
         if(! is.null(uniprot_xml)){
           location <- paste(get_locations(uniprot_xml), collapse=",")
+          glycosylation <- paste(get_glycosylations(uniprot_xml), collapse = ",")
         }
         locations <- c(locations, location)
+        glycosylations <- c(glycosylations, glycosylation)
       }
       
       ## plot the merge curve, the peaks and the distances
@@ -125,7 +129,8 @@ for(sample in samples){
       charges, 
       charges_by_length, 
       pIs,
-      locations)
+      locations, 
+      glycosylations)
     
     # store the data in the results list
     results[[sample]] <- peak_dists
@@ -136,7 +141,6 @@ for(sample in samples){
 res_file <- paste0(res_path, res_name, as.numeric(Sys.time()), ".RData")
 save(results, file=res_file)
 print(paste0("saved results in [", res_file, "]"))
-
 
 
 
