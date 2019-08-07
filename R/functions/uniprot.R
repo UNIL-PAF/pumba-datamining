@@ -43,3 +43,19 @@ get_glycosylations <- function(uniprot_xml){
 }
 
 
+# get signal peptide postion
+get_signal_pep <- function(uniprot_xml){
+  features <- xml_find_all(uniprot_xml, ".//feature")
+  signal_pep <- features[xml_attr(features, "type") == "signal peptide"]
+  start_end <- xml_attr(xml_children(xml_children(signal_pep)), "position")
+  paste(start_end, collapse="-")
+}
+
+
+# get PTM's
+get_ptms <- function(uniprot_xml){
+  features <- xml_find_all(uniprot_xml, ".//feature")
+  ptms <- features[xml_attr(features, "type") == "modified residue"]
+  unique(xml_attr(ptms, "description"))
+}
+
