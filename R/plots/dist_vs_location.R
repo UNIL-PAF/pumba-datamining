@@ -6,7 +6,7 @@ rm(list=ls())
 location_term <- "membrane"
 
 # load results
-res_path <- ("/Users/admin/tmp/datamining_pumba/results/test_1565173167.53855.RData")
+res_path <- ("/Users/admin/tmp/datamining_pumba/results/test_1565181053.44648.RData")
 load(res_path)
 
 for(sample in names(results)){
@@ -22,7 +22,7 @@ for(sample in names(results)){
   names(col_vec) <- c(neg_location_term, location_term)
   
   p <- ggplot(data=peak_dists, aes(theo_weights, closest_peak_dists, colour=color)) 
-  p <- p + geom_point(alpha=0.5)
+  p <- p + geom_point(alpha=0.2)
   # p <- p + geom_text(data=peak_dists[peak_dists$theo_weights > 200, ], aes(theo_weights, closest_peak_dists, label=protein_acs), srt=90, col="red", alpha=0.3)
   p <- p + xlim(0, 100)
   p <- p + ylim(-2, 2)
