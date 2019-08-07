@@ -19,7 +19,7 @@ is_selected_sample <- function(sample, sel_samples){
 }
 
 # find datasets of a given sample
-find_datasets <- function(sample, all_datasets){ 
+find_datasets <- function(sample, all_datasets){
   my_res <- list()
   i <- 1
   for(d in all_datasets){ if(d$sample == sample){my_res[[i]] <- d; i <- i + 1} }
@@ -43,7 +43,11 @@ get_protein_acs <- function(protein_groups){
 }
 
 # get merged data for a protein from the backend
-get_protein_merge <- function(protein_ac){
+get_protein_merge <- function(protein_ac, sample){
+  # create the folder for the dataset if necessary
+  dataset_cache_path <- paste0(data_cache, sample)
+  if(! dir.exists(dataset_cache_path)) dir.create(dataset_cache_path)
+  
   # load protein from cache or get it from the backend
   protein_cache_path <- paste0(dataset_cache_path, '/', protein_ac, '.RData')
   

@@ -25,10 +25,6 @@ for(sample in samples){
     # look only at selected datasets
     if(! is_selected_sample(sample, sel_samples)) next
   
-    # create the folder for the dataset if necessary
-    dataset_cache_path <- paste0(data_cache, sample)
-    if(! dir.exists(dataset_cache_path)) dir.create(dataset_cache_path)
-  
     # load normalized protein groups file of one dataset
     datasets <- find_datasets(sample, all_datasets)
     
@@ -46,6 +42,7 @@ for(sample in samples){
     charges <- c()
     charges_by_length <- c()
     pIs <- c()
+    locations <- c()
     
     # loop over all proteins
     nr_prot_loop <- if(! exists("nr_proteins")) length(first_protein_acs) else nr_proteins
@@ -57,7 +54,7 @@ for(sample in samples){
       protein_ac <- first_protein_acs[k]
       
       # get merged data from backend or cache
-      protein_merges <- get_protein_merge(protein_ac)
+      protein_merges <- get_protein_merge(protein_ac, sample)
       
       # for some datasets the protein is not detected
       if(length(protein_merges) == 0) next
@@ -89,16 +86,27 @@ for(sample in samples){
       
       if(seq_exists(protein_ac)){
         seq <- get_seq(protein_ac)
-        
         theo_weights <- c(theo_weights, theo_weight)
-        closest_peak_dists <- c(closest_peak_dists, closest_peak_perc_diff)
         protein_acs <- c(protein_acs, protein_ac)
+
+        # distance info        
+        closest_peak_dists <- c(closest_peak_dists, closest_peak_perc_diff)
         closest_peak_masses <- c(closest_peak_masses, peaks_masses[closest_peak])
+
+        # info from AA sequence
         this_charge <- charge(seq, pH=7, pKscale="EMBOSS")
         this_pI <- pI(seq, pKscale = "EMBOSS")
         pIs <- c(pIs, this_pI)
         charges <- c(charges, this_charge)
-        charges_by_length <- c(charges_by_length, this_charge / nchar(seq))
+        charges_by_length <- c(charges_by_length, this_charge / nchar(seq))        
+        
+        # info from uniprot
+        uniprot_xml <- get_uniprot_xml(protein_ac)
+        location <- NA
+        if(! is.null(uniprot_xml)){
+          location <- paste(get_locations(uniprot_xml), collapse=",")
+        }
+        locations <- c(locations, location)
       }
       
       ## plot the merge curve, the peaks and the distances
@@ -116,32 +124,18 @@ for(sample in samples){
       closest_peak_masses, 
       charges, 
       charges_by_length, 
-      pIs)
+      pIs,
+      locations)
     
     # store the data in the results list
     results[[sample]] <- peak_dists
 }
 
+
 # store results with timestamp
 res_file <- paste0(res_path, res_name, as.numeric(Sys.time()), ".RData")
 save(results, file=res_file)
 print(paste0("saved results in [", res_file, "]"))
-
-
-
-# library(xml2)
-# xml_data <- NULL
-# xml_data <- xml_ns_strip(read_xml("https://www.uniprot.org/uniprot/P1234.xml"))
-# 
-# locations <- xml_find_all(xml_data, ".//location")
-# locations <- locations[! is.na(xml_attr(locations, "evidence"))]
-# xml_text(locations)
-
-
-
-
-
-
 
 
 
