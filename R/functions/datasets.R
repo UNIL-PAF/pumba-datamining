@@ -37,6 +37,19 @@ get_protein_groups <- function(dataset){
   read.table(file=dataset_pg_path, sep="\t", header = TRUE)
 }
 
+
+# get the original protein groups from MaxQuant
+get_orig_protein_groups <- function(dataset){
+  dataset_pg_path <- paste0(data_root, dataset$id, "/txt/proteinGroups.txt")
+  read.table(file=dataset_pg_path, sep="\t", header = TRUE)
+}
+
+# get protein intensity from Intensity.H column from MaxQuant results
+get_protein_intensity <- function(orig_protein){
+  int_idx <- grep("^Intensity.H$", colnames(orig_protein))
+  as.numeric(orig_protein[int_idx])
+}
+
 # get the first protein AC from the list
 get_protein_acs <- function(protein_groups){
   unlist(lapply(strsplit(as.character(protein_groups$Majority.protein.IDs), ";"), function(x){x[1]})) 
@@ -69,6 +82,7 @@ get_masses <- function(protein_merge){
 get_ints <- function(protein_merge){
   unlist(protein_merge$theoMergedProtein$intensities)
 }
+
 
 
 

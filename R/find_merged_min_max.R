@@ -6,7 +6,7 @@ rm(list=ls())
 
 # results
 res_path <- ("/Users/admin/tmp/datamining_pumba/results/")
-res_name <- "ptm_"
+res_name <- "int_"
 
 # internal library
 source("./R/functions/all_functions.R")
@@ -31,6 +31,7 @@ for(sample in samples){
     dataset_ids <- get_dataset_ids(datasets)
     
     protein_groups <- get_protein_groups(datasets[[1]])
+    orig_protein_groups <- get_orig_protein_groups(datasets[[1]])
     first_protein_acs <- get_protein_acs(protein_groups)
     
     # results
@@ -45,6 +46,7 @@ for(sample in samples){
     glycosylations <- c()
     signal_peps <- c()
     ptms <- c()
+    prot_intensities <- c()
     
     # loop over all proteins
     nr_prot_loop <- if(! exists("nr_proteins")) length(first_protein_acs) else nr_proteins
@@ -54,6 +56,7 @@ for(sample in samples){
       # select one protein
       protein <- protein_groups[k,]
       protein_ac <- first_protein_acs[k]
+      orig_protein <- orig_protein_groups[k,]
       
       # get merged data from backend or cache
       protein_merges <- get_protein_merge(protein_ac, sample)
@@ -100,7 +103,10 @@ for(sample in samples){
         this_pI <- pI(seq, pKscale = "EMBOSS")
         pIs <- c(pIs, this_pI)
         charges <- c(charges, this_charge)
-        charges_by_length <- c(charges_by_length, this_charge / nchar(seq))        
+        charges_by_length <- c(charges_by_length, this_charge / nchar(seq))
+        
+        # info from MaxQuan
+        prot_intensities <- c(prot_intensities, get_protein_intensity(orig_protein))
         
         # info from uniprot
         uniprot_xml <- get_uniprot_xml(protein_ac)
@@ -139,7 +145,8 @@ for(sample in samples){
       locations, 
       glycosylations,
       signal_peps,
-      ptms
+      ptms,
+      prot_intensities
       )
     
     # store the data in the results list
@@ -151,6 +158,7 @@ for(sample in samples){
 res_file <- paste0(res_path, res_name, as.numeric(Sys.time()), ".RData")
 save(results, file=res_file)
 print(paste0("saved results in [", res_file, "]"))
+
 
 
 
