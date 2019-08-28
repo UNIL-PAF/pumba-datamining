@@ -3,7 +3,7 @@ library(ggplot2)
 rm(list=ls())
 
 # location term
-location_term <- "membrane"
+location_term <- "mitochond"
 
 # load results
 res_path <- ("/Users/admin/tmp/datamining_pumba/results/res_1565182764.29958.RData")

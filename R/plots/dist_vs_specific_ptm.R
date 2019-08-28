@@ -3,7 +3,7 @@ library(ggplot2)
 rm(list=ls())
 
 
-ptm <- "phospho"
+ptm <- "glycyl"
 neg_label <- paste0("no ", ptm)
 pos_label <- ptm
 
@@ -15,7 +15,7 @@ for(sample in names(results)){
   
   peak_dists <- results[[sample]]
   peak_dists$color <- neg_label
-  peak_dists$color[grep("phospho", peak_dists$ptms, ignore.case = TRUE)] <- pos_label
+  peak_dists$color[grep(ptm, peak_dists$ptms, ignore.case = TRUE)] <- pos_label
   
   # colors
   col_vec <- c("grey", "red")

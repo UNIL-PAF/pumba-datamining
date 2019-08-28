@@ -6,7 +6,7 @@ rm(list=ls())
 
 # results
 res_path <- ("/Users/admin/tmp/datamining_pumba/results/")
-res_name <- "int_"
+res_name <- "test_"
 
 # internal library
 source("./R/functions/all_functions.R")
@@ -15,7 +15,7 @@ all_datasets <- get_all_datasets()
 samples <- get_samples(all_datasets)
 
 sel_samples <- c("HCT") # NULL
-#nr_proteins <- 100
+nr_proteins <- 100
 
 # store results
 results <- list()
@@ -30,9 +30,10 @@ for(sample in samples){
     # get the dataset ids for this sample
     dataset_ids <- get_dataset_ids(datasets)
     
-    protein_groups <- get_protein_groups(datasets[[1]])
-    orig_protein_groups <- get_orig_protein_groups(datasets[[1]])
-    first_protein_acs <- get_protein_acs(protein_groups)
+    all_protein_groups <- get_all_protein_groups(datasets)
+    #orig_protein_groups <- get_orig_protein_groups(datasets[[1]])
+    all_orig_protein_groups <- get_all_orig_protein_groups(datasets)
+    first_protein_acs <- get_protein_acs(all_protein_groups[[1]])
     
     # results
     closest_peak_dists <- c()
@@ -47,6 +48,8 @@ for(sample in samples){
     signal_peps <- c()
     ptms <- c()
     prot_intensities <- c()
+    nr_peaks <- c()
+    perc_slices <- c()
     
     # loop over all proteins
     nr_prot_loop <- if(! exists("nr_proteins")) length(first_protein_acs) else nr_proteins
@@ -54,9 +57,12 @@ for(sample in samples){
       print(paste0(sample, ': ', k, " of ", nr_prot_loop))
       
       # select one protein
-      protein <- protein_groups[k,]
+      protein <- all_protein_groups[[1]][k,]
       protein_ac <- first_protein_acs[k]
-      orig_protein <- orig_protein_groups[k,]
+      #orig_protein <- orig_protein_groups[k,]
+      
+      # look for percentage of slices in which there was a signal
+      perc_slices_prot <- get_perc_slices(all_protein_groups, protein_ac, 0.1)
       
       # get merged data from backend or cache
       protein_merges <- get_protein_merge(protein_ac, sample)
@@ -97,6 +103,10 @@ for(sample in samples){
         # distance info        
         closest_peak_dists <- c(closest_peak_dists, closest_peak_perc_diff)
         closest_peak_masses <- c(closest_peak_masses, peaks_masses[closest_peak])
+        
+        # number of slices or peaks per protein
+        nr_peaks <- c(nr_peaks, length(peaks_masses))
+        perc_slices <- c(perc_slices, perc_slices_prot)
 
         # info from AA sequence
         this_charge <- charge(seq, pH=7, pKscale="EMBOSS")
@@ -106,7 +116,7 @@ for(sample in samples){
         charges_by_length <- c(charges_by_length, this_charge / nchar(seq))
         
         # info from MaxQuan
-        prot_intensities <- c(prot_intensities, get_protein_intensity(orig_protein))
+        prot_intensities <- c(prot_intensities, get_median_protein_intensities(all_orig_protein_groups, protein_ac))
         
         # info from uniprot
         uniprot_xml <- get_uniprot_xml(protein_ac)
@@ -146,7 +156,9 @@ for(sample in samples){
       glycosylations,
       signal_peps,
       ptms,
-      prot_intensities
+      prot_intensities,
+      nr_peaks,
+      perc_slices
       )
     
     # store the data in the results list

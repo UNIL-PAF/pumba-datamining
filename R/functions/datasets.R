@@ -37,6 +37,12 @@ get_protein_groups <- function(dataset){
   read.table(file=dataset_pg_path, sep="\t", header = TRUE)
 }
 
+# get all protein groups from a list of datasets
+get_all_protein_groups <- function(datasets){
+  lapply(datasets, function(dataset){
+    get_protein_groups(dataset)
+  })
+}
 
 # get the original protein groups from MaxQuant
 get_orig_protein_groups <- function(dataset){
@@ -44,10 +50,32 @@ get_orig_protein_groups <- function(dataset){
   read.table(file=dataset_pg_path, sep="\t", header = TRUE)
 }
 
+# get all the original protein groups from MaxQuant for a list of datasets
+get_all_orig_protein_groups <- function(datasets){
+  lapply(datasets, function(dataset){
+    get_orig_protein_groups(dataset)
+  })
+}
+
 # get protein intensity from Intensity.H column from MaxQuant results
 get_protein_intensity <- function(orig_protein){
   int_idx <- grep("^Intensity.H$", colnames(orig_protein))
   as.numeric(orig_protein[int_idx])
+}
+
+# get the median intensity among all samples for each protein
+get_median_protein_intensities <- function(all_orig_protein, protein_ac){
+  prot_ints <- unlist(lapply(all_orig_protein, function(orig_protein){
+    protein_acs <- get_protein_acs(orig_protein)
+    prot_id <- which(protein_acs == protein_ac)
+    if(length(prot_id) == 1){
+      proteins <- orig_protein[protein_acs == protein_ac,]
+      get_protein_intensity(proteins)
+    }else{
+      NA
+    }
+  }))
+  median(prot_ints, na.rm = TRUE)
 }
 
 # get the first protein AC from the list
@@ -81,6 +109,24 @@ get_masses <- function(protein_merge){
 
 get_ints <- function(protein_merge){
   unlist(protein_merge$theoMergedProtein$intensities)
+}
+
+# look for percentage of slices in which there was a signal
+get_perc_slices <- function(all_protein_groups, protein_ac, threshold_perc = 0.1){
+  perc_slices <- unlist(lapply(all_protein_groups, function(protein_groups){
+    protein_acs <- get_protein_acs(protein_groups)
+    prot_id <- which(protein_acs == protein_ac)
+    if(length(prot_id) == 1){
+      proteins <- protein_groups[protein_acs == protein_ac,]
+      int_cols <- grep("Intensity", colnames(proteins))
+      ints <- proteins[int_cols]
+      threshold <- threshold_perc * max(ints)
+      sum(ints > threshold) / length(int_cols)
+    }else{
+      NA
+    }
+  }))
+  median(perc_slices, na.rm = TRUE)
 }
 
 
