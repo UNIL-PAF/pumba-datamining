@@ -3,16 +3,34 @@ library(stringr)
 
 rm(list=ls())
 
-no_glycosylation_label <- "no glycosylations"
-glycosylation_label <- "glycosylated"
+
 
 # load results
 res_path <- ("/Users/admin/tmp/datamining_pumba/results/glyco_1565186109.93345.RData")
 load(res_path)
 
-for(sample in names(results)){
-  
-  peak_dists <- results[[sample]]
+res <- results[['HCT']]
+
+res$is_glycosylated <- "no glycosylation"
+res$is_glycosylated[res$glycosylations != ""] <- "glycosylated"
+
+show_mass_range <- c(10, 300)
+
+ggplot(res[order(res$is_glycosylated, decreasing=TRUE),], aes(x=theo_weights, y=closest_peak_masses, color=is_glycosylated)) +
+  geom_point(alpha=0.7) +
+  scale_color_manual(values = c("no glycosylation" = "lightgrey", "glycosylated" = "#ff7f00")) +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_cartesian(xlim = show_mass_range, ylim = show_mass_range) +
+  geom_abline(intercept = 0, slope = 1) +
+  theme_bw()
+
+
+
+no_glycosylation_label <- "no glycosylations"
+glycosylation_label <- "glycosylated"
+
+
   peak_dists$color <- no_glycosylation_label
   peak_dists$color[peak_dists$glycosylations != ""] <- glycosylation_label
   #peak_dists$color[str_count(peak_dists$glycosylations, ",") > 4] <- glycosylation_label
@@ -40,4 +58,3 @@ for(sample in names(results)){
   p <- p + ggtitle(sample)
   print(p)
   
-}

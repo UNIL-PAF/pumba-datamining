@@ -6,6 +6,49 @@ rm(list=ls())
 res_path <- ("/Users/admin/tmp/datamining_pumba/results/res_1565182764.29958.RData")
 load(res_path)
 
+sample <- "HCT"
+res <- results[[sample]]
+
+
+# pI
+res$pI_status <- "neutral"
+res$pI_status[res$pIs > 9] <- "pos"
+res$pI_status[res$pIs < 5] <- "neg"
+
+show_mass_range <- c(10, 300)
+
+ggplot(res, aes(x=theo_weights, y=closest_peak_masses, color=pI_status)) +
+  geom_point(alpha=0.05) +
+  geom_point(data=res[res$pI_status == "pos", ]) +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_cartesian(xlim=show_mass_range,ylim=show_mass_range) +
+  geom_abline(intercept=0, slope=1) +
+  theme_bw()
+
+ggplot(res, aes(x=theo_weights, y=closest_peak_masses, color=pI_status)) +
+  geom_point(alpha=0.05) +
+  geom_point(data=res[res$pI_status == "neutral", ]) +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_cartesian(xlim=show_mass_range,ylim=show_mass_range) +
+  geom_abline(intercept=0, slope=1) +
+  theme_bw()
+
+
+
+ggplot(res, aes(x=theo_weights, y=closest_peak_masses, color=pI_status)) +
+  geom_point(alpha=0.05) +
+  geom_point(data=res[res$pI_status == "neg", ]) +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_cartesian(xlim=show_mass_range,ylim=show_mass_range) +
+  geom_abline(intercept=0, slope=1) +
+  theme_bw()
+
+
+
+
 for(sample in names(results)){
   
   peak_dists <- results[[sample]]

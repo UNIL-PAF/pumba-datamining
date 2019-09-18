@@ -59,3 +59,12 @@ get_ptms <- function(uniprot_xml){
   unique(xml_attr(ptms, "description"))
 }
 
+
+# get cross-links (e.g. glycyl lysine)
+get_crosslink <- function(uniprot_xml){
+  features <- xml_find_all(uniprot_xml, ".//feature")
+  ptms <- features[xml_attr(features, "type") == "cross-link"]
+  unique(xml_attr(ptms, "description"))
+}
+
+

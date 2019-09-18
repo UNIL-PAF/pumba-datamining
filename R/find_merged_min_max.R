@@ -1,4 +1,4 @@
-library(httr)
+  library(httr)
 library(ggplot2)
 library(Peptides)
 
@@ -6,7 +6,7 @@ rm(list=ls())
 
 # results
 res_path <- ("/Users/admin/tmp/datamining_pumba/results/")
-res_name <- "test_"
+res_name <- "scop"
 
 # internal library
 source("./R/functions/all_functions.R")
@@ -15,7 +15,7 @@ all_datasets <- get_all_datasets()
 samples <- get_samples(all_datasets)
 
 sel_samples <- c("HCT") # NULL
-nr_proteins <- 100
+#nr_proteins <- 100
 
 # store results
 results <- list()
@@ -50,6 +50,10 @@ for(sample in samples){
     prot_intensities <- c()
     nr_peaks <- c()
     perc_slices <- c()
+    perc_dists <- c()
+    peak_intensities <- c()
+    peak_masses <- c()
+    scop_classes <- c()
     
     # loop over all proteins
     nr_prot_loop <- if(! exists("nr_proteins")) length(first_protein_acs) else nr_proteins
@@ -86,8 +90,10 @@ for(sample in samples){
       }
       
       peaks_masses <- mass[peak_idxs]
+      peaks_ints <- ints[peak_idxs]
       theo_weight <- as.numeric(protein$Mol..weight..kDa.)
       peak_dists <- abs(peaks_masses - theo_weight)
+      peak_perc_dists <- (peaks_masses / theo_weight) - 1
       
       closest_peak <- which(peak_dists == min(peak_dists))
       closest_peak_perc_diff <- (peaks_masses[closest_peak] / theo_weight) - 1
@@ -128,23 +134,30 @@ for(sample in samples){
           location <- paste(get_locations(uniprot_xml), collapse=",")
           glycosylation <- paste(get_glycosylations(uniprot_xml), collapse = ",")
           signal_pep <- get_signal_pep(uniprot_xml)
-          ptm <- paste(get_ptms(uniprot_xml), collapse = ",")
+          ptm <- paste(get_ptms(uniprot_xml), get_crosslink(uniprot_xml), collapse = ",")
         }
         locations <- c(locations, location)
         glycosylations <- c(glycosylations, glycosylation)
         signal_peps <- c(signal_peps, signal_pep)
         ptms <- c(ptms, ptm)
+        peak_intensities <- c(peak_intensities, paste(peaks_ints, collapse = ","))
+        peak_masses <- c(peak_masses, paste(peaks_masses, collapse = ","))
+        perc_dists <- c(perc_dists, paste(peak_perc_dists, collapse=","))
+        scop_classes <- c(scop_classes, get_scop_classes(protein_ac))
       }
       
-      ## plot the merge curve, the peaks and the distances
-      # peak_dists_perc <- (peaks_masses / theo_weight) - 1
-      # plot(mass, ints, type="l", main=protein_ac)
-      # abline(v=theo_weight, col="blue")
-      # points(mass[peaks_idx], ints[peaks_idx], col="red")
-      # text(mass[peaks_idx], ints[peaks_idx], labels=(round(peak_dists_perc, digits = 2)), col="red", pos=4)
+      if(length(grep("glycyl", ptm, ignore.case=TRUE)) >= 1){
+        ## plot the merge curve, the peaks and the distances
+        peak_dists_perc <- (peaks_masses / theo_weight) - 1
+        plot(mass, ints, type="l", main=protein_ac)
+        abline(v=theo_weight, col="blue")
+        points(mass[peak_idxs], ints[peak_idxs], col="red")
+        text(mass[peak_idxs], ints[peak_idxs], labels=(round(peak_dists_perc, digits = 2)), col="red", pos=4)
+      }
+ 
     }
     
-    peak_dists <- data.frame(
+    sample_res <- data.frame(
       theo_weights, 
       closest_peak_dists, 
       protein_acs, 
@@ -158,20 +171,19 @@ for(sample in samples){
       ptms,
       prot_intensities,
       nr_peaks,
-      perc_slices
+      perc_slices,
+      peak_intensities,
+      peak_masses,
+      perc_dists, 
+      scop_classes
       )
     
     # store the data in the results list
-    results[[sample]] <- peak_dists
+    results[[sample]] <- sample_res
 }
-
 
 # store results with timestamp
 res_file <- paste0(res_path, res_name, as.numeric(Sys.time()), ".RData")
 save(results, file=res_file)
 print(paste0("saved results in [", res_file, "]"))
-
-
-
-
 
