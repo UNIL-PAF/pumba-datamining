@@ -11,9 +11,9 @@ data_cache <- "/Users/admin/tmp/datamining_pumba/"
 #########################
 # settings for peak detection
 #########################
-peak_detection_int_thresh <- 1e-07
-peak_detection_zero_thresh <- 1e-8
-peak_detection_min_rel_to_strongest <- 0.1
+peak_detection_int_thresh <- 1e-08
+peak_detection_zero_thresh <- 0.8
+peak_detection_min_rel_to_strongest <- 0.01
 
 
 ###########################

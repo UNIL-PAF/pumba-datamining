@@ -1,0 +1,374 @@
+---
+title: "Pumba datamining"
+author: "Roman Mylonas"
+date: "2 Oct 2019"
+output: html_document
+---
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+suppressPackageStartupMessages(library("ggplot2"))
+
+# load results
+res <- path <- ("/Users/admin/tmp/datamining_pumba/results/homodimers_1569571862.15343.RData")
+load(res <- path)
+
+sample <- "HCT"
+res <- results[[sample]]
+
+show_mass_range <- c(10, 300)
+
+peak_selection <- "highest_peak_masses" # "closest_peak_masses
+```
+
+# Data processing
+- Data is extracted from Pumba
+- Peaks are detected
+- Data is annotated from additional sources (e.g. UniProt, SCOP)
+
+# Peak detection
+- Peaks below an absolute normalised intensity of 1e-08 are ignored.
+- Only peaks >= 10% compared to strongest peak are retained.
+- In between adjacent peaks the curve has to go through <= 80% of last peak, otherwise only the strongest peak is retained.  
+
+# Plot theoretical vs observed masses
+The observed masses correspond to the *HIGHEST* peak.
+
+### Protein intesities
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+ggplot(res[order(res$prot_intensities, decreasing=FALSE),], aes_string(x="theo_weights", y=peak_selection, color="prot_intensities")) +
+  geom_point() +
+  scale_colour_gradient(low = "white", high = "#08519c", trans="log") +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_cartesian(xlim = show_mass_range, ylim = show_mass_range) +
+  geom_abline(intercept = 0, slope = 1) +
+  theme_bw()
+```
+
+## Sequence properties
+Sequence properties are computed using the R package *Peptides*. 
+
+### Isoelectric point (pI)
+- pos > 9
+- neg < 5
+- neutral are between 5 and 9
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+res$pI_status <- "neutral"
+res$pI_status[res$pIs > 9] <- "pos"
+res$pI_status[res$pIs < 5] <- "neg"
+
+ggplot(res, aes_string(x="theo_weights", y=peak_selection, color="pI_status")) +
+  geom_point(alpha=0.05) +
+  geom_point(data=res[res$pI_status == "neutral", ]) +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_cartesian(xlim=show_mass_range,ylim=show_mass_range) +
+  geom_abline(intercept=0, slope=1) +
+  theme_bw()
+
+ggplot(res, aes_string(x="theo_weights", y=peak_selection, color="pI_status")) +
+  geom_point(alpha=0.05) +
+  geom_point(data=res[res$pI_status == "pos", ]) +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_cartesian(xlim=show_mass_range,ylim=show_mass_range) +
+  geom_abline(intercept=0, slope=1) +
+  theme_bw()
+
+ggplot(res, aes_string(x="theo_weights", y=peak_selection, color="pI_status")) +
+  geom_point(alpha=0.05) +
+  geom_point(data=res[res$pI_status == "neg", ]) +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_cartesian(xlim=show_mass_range,ylim=show_mass_range) +
+  geom_abline(intercept=0, slope=1) +
+  theme_bw()
+```
+
+### Hydrophobicity by Hopp Woods
+- pos > 0.3
+- neg < -0.3 
+- neutral are between -0.3 and 0.3
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+res$hydrophobicity <- "neutral"
+res$hydrophobicity[res$hydrophobicities > 0.3] <- "pos"
+res$hydrophobicity[res$hydrophobicities < -0.3] <- "neg"
+
+ggplot(res, aes_string(x="theo_weights", y=peak_selection, color="hydrophobicity")) +
+  geom_point(alpha=0.05) +
+  geom_point(data=res[res$hydrophobicity == "neutral", ]) +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_cartesian(xlim=show_mass_range,ylim=show_mass_range) +
+  geom_abline(intercept=0, slope=1) +
+  theme_bw()
+
+ggplot(res, aes_string(x="theo_weights", y=peak_selection, color="hydrophobicity")) +
+  geom_point(alpha=0.05) +
+  geom_point(data=res[res$hydrophobicity == "pos", ]) +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_cartesian(xlim=show_mass_range,ylim=show_mass_range) +
+  geom_abline(intercept=0, slope=1) +
+  theme_bw()
+
+ggplot(res, aes_string(x="theo_weights", y=peak_selection, color="hydrophobicity")) +
+  geom_point(alpha=0.05) +
+  geom_point(data=res[res$hydrophobicity == "neg", ]) +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_cartesian(xlim=show_mass_range,ylim=show_mass_range) +
+  geom_abline(intercept=0, slope=1) +
+  theme_bw()
+```
+
+## Sequence properties
+Parse UniProt annotations from various fields (e.g. locations).
+
+### Mitochondrial proteins
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+# location term
+location_term <- "mitochond"
+  
+neg_location_term <- paste0("not ", location_term)
+res$color <- neg_location_term
+res$color[grep(location_term, res$location, ignore.case = TRUE)] <- location_term
+
+# colors
+col_vec <- c("grey", "red")
+names(col_vec) <- c(neg_location_term, location_term)
+
+p <- ggplot(data=res[order(res$color),], aes_string(x="theo_weights", y=peak_selection, colour="color")) 
+p <- p + geom_point(data = res[res$color == neg_location_term,], alpha=0.2)
+p <- p + geom_point(data = res[res$color == location_term,], alpha=0.7)
+p <- p + scale_x_log10()
+p <- p + scale_y_log10()
+p <- p + coord_cartesian(xlim=show_mass_range,ylim=show_mass_range)
+p <- p + geom_abline(intercept=0, slope=1)
+p <- p + scale_colour_manual(values=col_vec)
+p <- p + theme_bw()
+p <- p + ggtitle(sample)
+print(p)
+```
+
+### Nucleus proteins
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+# location term
+location_term <- "nucleus"
+  
+neg_location_term <- paste0("not ", location_term)
+res$color <- neg_location_term
+res$color[grep(location_term, res$location, ignore.case = TRUE)] <- location_term
+
+# colors
+col_vec <- c("grey", "red")
+names(col_vec) <- c(neg_location_term, location_term)
+
+p <- ggplot(data=res[order(res$color),], aes_string(x="theo_weights", y=peak_selection, colour="color")) 
+p <- p + geom_point(data = res[res$color == neg_location_term,], alpha=0.2)
+p <- p + geom_point(data = res[res$color == location_term,], alpha=0.7)
+p <- p + scale_x_log10()
+p <- p + scale_y_log10()
+p <- p + coord_cartesian(xlim=show_mass_range,ylim=show_mass_range)
+p <- p + geom_abline(intercept=0, slope=1)
+p <- p + scale_colour_manual(values=col_vec)
+p <- p + theme_bw()
+p <- p + ggtitle(sample)
+print(p)
+```
+
+### Glycosylated proteins
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+neg_location_term <- "no glycosylation"
+location_term <- "glycosylated"
+
+res$color <- neg_location_term
+res$color[res$glycosylations != ""] <- location_term
+
+# colors
+col_vec <- c("grey", "red")
+names(col_vec) <- c(neg_location_term, location_term)
+
+p <- ggplot(data=res[order(res$color),], aes_string(x="theo_weights", y=peak_selection, colour="color")) 
+p <- p + geom_point(data = res[res$color == neg_location_term,], alpha=0.2)
+p <- p + geom_point(data = res[res$color == location_term,], alpha=0.7)
+p <- p + scale_x_log10()
+p <- p + scale_y_log10()
+p <- p + coord_cartesian(xlim=show_mass_range,ylim=show_mass_range)
+p <- p + geom_abline(intercept=0, slope=1)
+p <- p + scale_colour_manual(values=col_vec)
+p <- p + theme_bw()
+p <- p + ggtitle(sample)
+print(p)
+```
+
+
+### Ubiquitinated proteins (glycyl lysine)
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+ptm <- "glycyl"
+neg_label <- paste0("no ", ptm)
+pos_label <- ptm
+
+res$color <- neg_label
+res$color[grep(ptm, res$ptms, ignore.case = TRUE)] <- pos_label
+
+# colors
+col_vec <- c("grey", "red")
+names(col_vec) <- c(neg_label, pos_label)
+
+p <- ggplot(data=res[order(res$color),], aes_string(x="theo_weights", y=peak_selection, colour="color")) 
+p <- p + geom_point(data = res[res$color == neg_label,], alpha=0.2)
+p <- p + geom_point(data = res[res$color != neg_label,], alpha=0.7)
+p <- p + scale_x_log10()
+p <- p + scale_y_log10()
+p <- p + coord_cartesian(xlim=show_mass_range,ylim=show_mass_range)
+p <- p + geom_abline(intercept=0, slope=1)
+p <- p + scale_colour_manual(values=col_vec)
+p <- p + theme_bw()
+p <- p + ggtitle(sample)
+print(p)
+```
+
+### Signal peptides
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+
+neg_label <- "no signal peptide"
+pos_label <- "signal peptide"
+
+res$color <- neg_label
+res$color[res$signal_peps != ""] <- pos_label
+
+# colors
+col_vec <- c("grey", "red")
+names(col_vec) <- c(neg_label, pos_label)
+
+p <- ggplot(data=res[order(res$color),], aes_string(x="theo_weights", y=peak_selection, colour="color")) 
+p <- p + geom_point(data = res[res$color == neg_label,], alpha=0.2)
+p <- p + geom_point(data = res[res$color != neg_label,], alpha=0.7)
+p <- p + scale_x_log10()
+p <- p + scale_y_log10()
+p <- p + coord_cartesian(xlim=show_mass_range,ylim=show_mass_range)
+p <- p + geom_abline(intercept=0, slope=1)
+p <- p + scale_colour_manual(values=col_vec)
+p <- p + theme_bw()
+p <- p + ggtitle(sample)
+print(p)
+```  
+  
+### Phospho
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+ptm <- "phospho"
+neg_label <- paste0("no ", ptm)
+pos_label <- ptm
+
+res$color <- neg_label
+res$color[grep(ptm, res$ptms, ignore.case = TRUE)] <- pos_label
+
+# colors
+col_vec <- c("grey", "red")
+names(col_vec) <- c(neg_label, pos_label)
+
+p <- ggplot(data=res[order(res$color),], aes_string(x="theo_weights", y=peak_selection, colour="color")) 
+p <- p + geom_point(data = res[res$color == neg_label,], alpha=0.2)
+p <- p + geom_point(data = res[res$color != neg_label,], alpha=0.7)
+p <- p + scale_x_log10()
+p <- p + scale_y_log10()
+p <- p + coord_cartesian(xlim=show_mass_range,ylim=show_mass_range)
+p <- p + geom_abline(intercept=0, slope=1)
+p <- p + scale_colour_manual(values=col_vec)
+p <- p + theme_bw()
+p <- p + ggtitle(sample)
+print(p)
+```
+  
+  
+## SCOP (Structural Classification of Proteins)
+- Use approach described in *"Girstmair, Hannah, et al. "The Hsp90 isoforms from S. cerevisiae differ in structure, function and client range." Nature communications 10.1 (2019): 1-15."*.
+- Search sequences against SCOP databases using blast-scop (v. 2.0.3).
+- Keep entries with E-value <= 0.001.
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+scop_classes <- read.csv("/Users/admin/Work/PAF/projects/pumba/data/datamining/scop/SCOP_classes.csv")
+
+for(scop_class_short in scop_classes$class){
+  scop_class_name <- as.character(scop_classes$name[scop_classes$class == scop_class_short])
+  
+  # Membrane class from SCOP
+  res$is_scop_class <- unlist(lapply(res$scop_classes, function(x){ if(length(grep(scop_class_short, x)) > 0) scop_class_name else ""}))
+  
+  show_mass_range <- c(10, 300)
+  
+  p <- ggplot(res[order(res$is_scop_class),], aes_string(x="theo_weights", y=peak_selection, color="is_scop_class")) +
+    geom_point(data=res[res$is_scop_class == "", ], alpha=0.1, color="grey") +
+    geom_point(data=res[res$is_scop_class != "", ]) +
+    scale_x_log10() +
+    scale_y_log10() +
+    coord_cartesian(xlim=show_mass_range,ylim=show_mass_range) +
+    geom_abline(intercept=0, slope=1) +
+    ggtitle(scop_class_name) +
+    theme_bw()
+  
+  print(p)
+}
+```
+
+## Fragmentation
+
+### Slices with protein identification
+
+Plot in how many slices the a protein was found (as percentage).
+
+#### Logarithmic scale
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+ggplot(res[order(res$perc_slices, decreasing=FALSE),], aes_string(x="theo_weights", y=peak_selection, color="perc_slices")) +
+  geom_point() +
+  scale_colour_gradient(low = "white", high = "black", trans="log") +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_cartesian(xlim = show_mass_range, ylim = show_mass_range) +
+  geom_abline(intercept = 0, slope = 1) +
+  theme_bw()
+
+```
+
+#### Linear scale
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+
+ggplot(res[order(res$perc_slices, decreasing=FALSE),], aes_string(x="theo_weights", y=peak_selection, color="perc_slices")) +
+  geom_point() +
+  scale_colour_gradient(low = "white", high = "black") +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_cartesian(xlim = show_mass_range, ylim = show_mass_range) +
+  geom_abline(intercept = 0, slope = 1) +
+  theme_bw()
+```
+
+### Number of peaks
+
+Plot the number of identified peaks per protein.
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+ggplot(res[order(res$nr_peaks, decreasing=FALSE),], aes_string(x="theo_weights", y=peak_selection, color="nr_peaks")) +
+  geom_point() +
+  scale_colour_gradient(low = "#bdd7e7", high = "#08519c") +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_cartesian(xlim = show_mass_range, ylim = show_mass_range) +
+  geom_abline(intercept = 0, slope = 1) +
+  theme_bw()
+```
+  
+
+

@@ -68,3 +68,11 @@ get_crosslink <- function(uniprot_xml){
 }
 
 
+# get homodimer annotation
+get_homodimer <- function(uniprot_xml){
+  comments <- xml_find_all(uniprot_xml, ".//comment")
+  subunits <- comments[xml_attr(comments, "type") == "subunit"]
+  dimers <- grep('homodimer', subunits)
+  if(length(dimers) >= 1) TRUE else FALSE
+}
+

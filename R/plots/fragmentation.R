@@ -3,7 +3,7 @@ library(ggplot2)
 rm(list=ls())
 
 # load results
-res_path <- ("/Users/admin/tmp/datamining_pumba/results/frag_1567075972.89237.RData")
+res_path <- ("/Users/admin/tmp/datamining_pumba/results/homodimers_1569571862.15343.RData")
 load(res_path)
 
 sample <- "HCT"
@@ -19,7 +19,6 @@ ggplot(res[order(res$prot_intensities, decreasing=FALSE),], aes(x=theo_weights, 
   coord_cartesian(xlim = show_mass_range, ylim = show_mass_range) +
   geom_abline(intercept = 0, slope = 1) +
   theme_bw()
-
 
 
 # plot intenstiy vs percentage of slices with value
@@ -99,6 +98,9 @@ res$fragments <- label_fragments(res$perc_dists)
 
 fragment_order <- c("none", "lower", "higher", "both")
 
+sub_res <- res[res$closest_peak_dists < -0.5,]
+a <- sub_res[sub_res$fragments == "higher",]
+
 ggplot(res[order(match(res$fragments, fragment_order)),], aes(x=theo_weights, y=closest_peak_masses, color=fragments)) +
   geom_point() +
   scale_color_manual(values = c("none" = "lightgrey", "both" = "#984ea3", "lower" = "#4daf4a", "higher" = "#ff7f00")) +
@@ -148,9 +150,18 @@ find_multimers <- function(peak_masses){
 }
 
 res$multimer <- find_multimers(res$peak_masses)
+res$is_dimer <- "none"
+res$is_dimer[res$homodimers] <- "uniprot"
+res$is_dimer[grep("2-mer", res$multimer)] <- "pumba"
+res$is_dimer[res$homodimers & res$is_dimer == "pumba"] <- "both"
 
+is_dimer_order <- c("none", "pumba", "uniprot", "both")
 
-
-
-
-
+ggplot(res[order(match(res$is_dimer, is_dimer_order)),], aes(x=theo_weights, y=closest_peak_masses, color=is_dimer)) +
+  geom_point() +
+  scale_color_manual(values = c("none" = "lightgrey", "both" = "#984ea3", "pumba" = "#4daf4a", "uniprot" = "#ff7f00")) +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_cartesian(xlim = show_mass_range, ylim = show_mass_range) +
+  geom_abline(intercept = 0, slope = 1) +
+  theme_bw()

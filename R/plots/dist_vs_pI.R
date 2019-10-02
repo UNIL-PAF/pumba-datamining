@@ -3,12 +3,11 @@ library(ggplot2)
 rm(list=ls())
 
 # load results
-res_path <- ("/Users/admin/tmp/datamining_pumba/results/res_1565182764.29958.RData")
+res_path <- ("/Users/admin/tmp/datamining_pumba/results/new_peakdetection_1569505896.27378.RData")
 load(res_path)
 
 sample <- "HCT"
 res <- results[[sample]]
-
 
 # pI
 res$pI_status <- "neutral"

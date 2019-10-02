@@ -9,23 +9,27 @@ get_peak_indexes <- function(ints){
   passed_by_zero <- TRUE
   # if neighboring peaks don't pass at 0 in between, we take the highest one.
   last_int <- 0
+  last_peak_int <- 0
   peaks_idx <- c()
   
   while(i <= length(ints)){
     if(ints[i] > ints[i-1]){
       is_increasing <- TRUE
-      if(! passed_by_zero && ints[i-1] <= peak_detection_zero_thresh) passed_by_zero <- TRUE
+      #if(! passed_by_zero && ints[i-1] <= peak_detection_zero_thresh) passed_by_zero <- TRUE
+      #passed_by_zero <- TRUE
+      current_threshold <- last_peak_int * peak_detection_zero_thresh
+      if(! passed_by_zero && ints[i-1] <= current_threshold) passed_by_zero <- TRUE
     }else{
       if(is_increasing){
         if(ints[i-1] > peak_detection_int_thresh){
           if(passed_by_zero){
             peaks_idx <- c(peaks_idx, i-1)
+            last_peak_int <- ints[i-1]
             passed_by_zero <- FALSE
-            last_int <- ints[i-1]
           }else if(ints[i-1] > last_int){
-            last_int <- ints[i-1]
             peaks_idx[length(peaks_idx)] <- i-1
           }
+          last_int <- ints[i-1]
         }
         is_increasing <- FALSE
       }

@@ -6,7 +6,7 @@ neg_label <- "low int"
 pos_label <- "high int"
 
 # load results
-res_path <- ("/Users/admin/tmp/datamining_pumba/results/int_1565269689.97661.RData")
+res_path <- ("/Users/admin/tmp/datamining_pumba/results/new_peakdetection_1569505896.27378.RData")
 load(res_path)
 
 
@@ -16,6 +16,15 @@ res <- results[[sample]]
 show_mass_range <- c(10, 300)
 
 ggplot(res[order(res$prot_intensities, decreasing=FALSE),], aes(x=theo_weights, y=closest_peak_masses, color=prot_intensities)) +
+  geom_point() +
+  scale_colour_gradient(low = "white", high = "#08519c", trans="log") +
+  scale_x_log10() +
+  scale_y_log10() +
+  coord_cartesian(xlim = show_mass_range, ylim = show_mass_range) +
+  geom_abline(intercept = 0, slope = 1) +
+  theme_bw()
+
+ggplot(res[order(res$prot_intensities, decreasing=FALSE),], aes(x=theo_weights, y=highest_peak_masses, color=prot_intensities)) +
   geom_point() +
   scale_colour_gradient(low = "white", high = "#08519c", trans="log") +
   scale_x_log10() +

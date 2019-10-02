@@ -1,4 +1,4 @@
-  library(httr)
+library(httr)
 library(ggplot2)
 library(Peptides)
 
@@ -6,7 +6,7 @@ rm(list=ls())
 
 # results
 res_path <- ("/Users/admin/tmp/datamining_pumba/results/")
-res_name <- "scop"
+res_name <- "homodimers_"
 
 # internal library
 source("./R/functions/all_functions.R")
@@ -16,6 +16,7 @@ samples <- get_samples(all_datasets)
 
 sel_samples <- c("HCT") # NULL
 #nr_proteins <- 100
+plot_proteins <- c() #"H7C417", "O60307", "E9PLN8", "E7EVH7", "A2RTX5", "A2RRP1", "A0A0A6YYH1")
 
 # store results
 results <- list()
@@ -40,6 +41,7 @@ for(sample in samples){
     theo_weights <- c()
     protein_acs <- c()
     closest_peak_masses <- c()
+    highest_peak_masses <- c()
     charges <- c()
     charges_by_length <- c()
     pIs <- c()
@@ -54,6 +56,8 @@ for(sample in samples){
     peak_intensities <- c()
     peak_masses <- c()
     scop_classes <- c()
+    hydrophobicities <- c()
+    homodimers <- c()
     
     # loop over all proteins
     nr_prot_loop <- if(! exists("nr_proteins")) length(first_protein_acs) else nr_proteins
@@ -97,6 +101,7 @@ for(sample in samples){
       
       closest_peak <- which(peak_dists == min(peak_dists))
       closest_peak_perc_diff <- (peaks_masses[closest_peak] / theo_weight) - 1
+      highest_peak <- which(peaks_ints == max(peaks_ints))
       
       # peak_dists_log <- log(peaks_masses) - log(theo_weight)
       # closest_peak_log_diff <- log(peaks_masses[closest_peak]) - log(theo_weight)
@@ -109,6 +114,7 @@ for(sample in samples){
         # distance info        
         closest_peak_dists <- c(closest_peak_dists, closest_peak_perc_diff)
         closest_peak_masses <- c(closest_peak_masses, peaks_masses[closest_peak])
+        highest_peak_masses <- c(highest_peak_masses, peaks_masses[highest_peak])
         
         # number of slices or peaks per protein
         nr_peaks <- c(nr_peaks, length(peaks_masses))
@@ -117,9 +123,11 @@ for(sample in samples){
         # info from AA sequence
         this_charge <- charge(seq, pH=7, pKscale="EMBOSS")
         this_pI <- pI(seq, pKscale = "EMBOSS")
+        this_hydrophopicity <- hydrophobicity(seq, scale = "HoppWoods")
         pIs <- c(pIs, this_pI)
         charges <- c(charges, this_charge)
         charges_by_length <- c(charges_by_length, this_charge / nchar(seq))
+        hydrophobicities <- c(hydrophobicities, this_hydrophopicity)
         
         # info from MaxQuan
         prot_intensities <- c(prot_intensities, get_median_protein_intensities(all_orig_protein_groups, protein_ac))
@@ -130,11 +138,13 @@ for(sample in samples){
         glycosylation <- NA
         signal_pep <- NA
         ptm <- NA
+        is_homodimer <- NA
         if(! is.null(uniprot_xml)){
           location <- paste(get_locations(uniprot_xml), collapse=",")
           glycosylation <- paste(get_glycosylations(uniprot_xml), collapse = ",")
           signal_pep <- get_signal_pep(uniprot_xml)
           ptm <- paste(get_ptms(uniprot_xml), get_crosslink(uniprot_xml), collapse = ",")
+          is_homodimer <- get_homodimer(uniprot_xml)
         }
         locations <- c(locations, location)
         glycosylations <- c(glycosylations, glycosylation)
@@ -144,15 +154,16 @@ for(sample in samples){
         peak_masses <- c(peak_masses, paste(peaks_masses, collapse = ","))
         perc_dists <- c(perc_dists, paste(peak_perc_dists, collapse=","))
         scop_classes <- c(scop_classes, get_scop_classes(protein_ac))
+        homodimers <- c(homodimers, is_homodimer)
       }
       
-      if(length(grep("glycyl", ptm, ignore.case=TRUE)) >= 1){
+      if(protein_ac %in% plot_proteins){
         ## plot the merge curve, the peaks and the distances
         peak_dists_perc <- (peaks_masses / theo_weight) - 1
         plot(mass, ints, type="l", main=protein_ac)
         abline(v=theo_weight, col="blue")
         points(mass[peak_idxs], ints[peak_idxs], col="red")
-        text(mass[peak_idxs], ints[peak_idxs], labels=(round(peak_dists_perc, digits = 2)), col="red", pos=4)
+        #text(mass[peak_idxs], ints[peak_idxs], labels=(round(peak_dists_perc, digits = 2)), col="red", pos=4)
       }
  
     }
@@ -162,6 +173,7 @@ for(sample in samples){
       closest_peak_dists, 
       protein_acs, 
       closest_peak_masses,
+      highest_peak_masses,
       charges, 
       charges_by_length, 
       pIs,
@@ -175,7 +187,9 @@ for(sample in samples){
       peak_intensities,
       peak_masses,
       perc_dists, 
-      scop_classes
+      scop_classes,
+      hydrophobicities,
+      homodimers
       )
     
     # store the data in the results list
