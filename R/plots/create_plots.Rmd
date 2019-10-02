@@ -17,7 +17,8 @@ res <- results[[sample]]
 
 show_mass_range <- c(10, 300)
 
-peak_selection <- "highest_peak_masses" # "closest_peak_masses
+peak_selection <- "closest_peak_masses" #"highest_peak_masses"
+peak_selection_term <- "CLOSEST" # "HIGHEST"
 ```
 
 # Data processing
@@ -31,7 +32,7 @@ peak_selection <- "highest_peak_masses" # "closest_peak_masses
 - In between adjacent peaks the curve has to go through <= 80% of last peak, otherwise only the strongest peak is retained.  
 
 # Plot theoretical vs observed masses
-The observed masses correspond to the *HIGHEST* peak.
+The observed masses correspond to the *`r peak_selection_term`* peak.
 
 ### Protein intesities
 
