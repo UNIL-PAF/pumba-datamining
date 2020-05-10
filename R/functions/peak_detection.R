@@ -39,8 +39,42 @@ get_peak_indexes <- function(ints){
   
   # filter out peaks below certain threshold relative to strongest peak
   peaks_ints <- ints[peaks_idx]
-  min_thresh <- max(peaks_ints) * peak_detection_min_rel_to_strongest
-  peaks_ints_ok <- peaks_ints >= min_thresh
-  peaks_idx[peaks_ints_ok]
+
+  if(all(is.na(peaks_ints))){
+    res <- NULL
+  }else{
+    min_thresh <- max(peaks_ints, na.rm = TRUE) * peak_detection_min_rel_to_strongest
+    peaks_ints_ok <- peaks_ints >= min_thresh
+    res <- peaks_idx[peaks_ints_ok]
+  }
+ 
+  res
+}
+
+
+get_peak_limits <- function(ints, idx){
+  start_int <- ints[idx]
   
+  # find the lower end
+  current_int <- start_int
+  current_idx <- idx
+  
+  while(current_int > ints[current_idx - 1]){
+    current_idx <- current_idx - 1
+    current_int <- ints[current_idx]
+    if(current_idx == 1) break
+  }
+  lower_idx <- current_idx
+  
+  # find the uper end
+  current_int <- start_int
+  current_idx <- idx
+  while(current_int > ints[current_idx + 1]){
+    current_idx <- current_idx + 1
+    current_int <- ints[current_idx]
+    if(current_idx == length(ints)) break
+  }
+  upper_idx <- current_idx
+  
+  c(lower_idx, upper_idx)
 }

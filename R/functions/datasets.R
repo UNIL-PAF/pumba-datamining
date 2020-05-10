@@ -102,6 +102,26 @@ get_protein_merge <- function(protein_ac, sample){
   protein_merge
 }
 
+# get merged data for a protein from the backend
+get_single_protein_merge <- function(protein_ac, dataset_id){
+  # create the folder for the dataset if necessary
+  dataset_cache_path <- paste0(data_cache, dataset_id)
+  if(! dir.exists(dataset_cache_path)) dir.create(dataset_cache_path)
+  
+  # load protein from cache or get it from the backend
+  protein_cache_path <- paste0(dataset_cache_path, '/', protein_ac, '.RData')
+  
+  if(file.exists(protein_cache_path)){
+    load(protein_cache_path)
+  }else{
+    protein_merge_get <- GET(paste0("http://localhost:9000/merge-protein/", protein_ac), query=list(dataSetsString=dataset_id))
+    protein_merge <- content(protein_merge_get)
+    save(protein_merge, file=protein_cache_path)
+  }
+  protein_merge
+}
+
+
 # get masses and intensities of merge
 get_masses <- function(protein_merge){ 
   10^(unlist(protein_merge$theoMergedProtein$theoMolWeight))
