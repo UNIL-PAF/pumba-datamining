@@ -1,8 +1,16 @@
 
 # get all datasets
-get_all_datasets <- function(){
-  dataset_get <- GET("localhost:9000/dataset")
-  content(dataset_get)
+get_all_datasets <- function(organism=NULL){
+  dataset_get <- getURL("localhost:9000/dataset")
+  all_datasets <- RJSONIO::fromJSON(dataset_get)
+  
+  # filter by organism if it is provided
+  if(! is.null(organism)){
+    keep_dataset <- unlist(lapply(all_datasets, function(ds){
+      ds$organism == organism
+    }))
+    all_datasets <- all_datasets[keep_dataset]
+  }
 }
 
 # get list of samples
@@ -83,6 +91,13 @@ get_protein_acs <- function(protein_groups){
   unlist(lapply(strsplit(as.character(protein_groups$Majority.protein.IDs), ";"), function(x){x[1]})) 
 }
 
+# get all protein ACs from all protein groups
+get_all_protein_acs <- function(all_protein_groups){
+  unique(unlist(lapply(all_protein_groups, function(protein_groups){
+    unlist(lapply(strsplit(as.character(protein_groups$Majority.protein.IDs), ";"), function(x){x})) 
+  })))
+}
+
 # get merged data for a protein from the backend
 get_protein_merge <- function(protein_ac, sample){
   # create the folder for the dataset if necessary
@@ -114,8 +129,10 @@ get_single_protein_merge <- function(protein_ac, dataset_id){
   if(file.exists(protein_cache_path)){
     load(protein_cache_path)
   }else{
-    protein_merge_get <- GET(paste0("http://localhost:9000/merge-protein/", protein_ac), query=list(dataSetsString=dataset_id))
-    protein_merge <- content(protein_merge_get)
+    # protein_merge_get <- GET(paste0("http://localhost:9000/merge-protein/", protein_ac), query=list(dataSetsString=dataset_id))
+    #protein_merge <- content(protein_merge_get)
+    protein_merge_get <- getURL(paste0("http://localhost:9000/merge-protein/", protein_ac, "/organism/human?dataSetsString=", dataset_id))
+    protein_merge <- RJSONIO::fromJSON(protein_merge_get)
     save(protein_merge, file=protein_cache_path)
   }
   protein_merge

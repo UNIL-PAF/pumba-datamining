@@ -8,9 +8,9 @@ from Bio import SeqIO
 import re
 
 
-#input_file = "/Users/admin/Work/PAF/projects/pumba/data/fasta/tiny_UP000005640_9606.fasta"
-input_file = "/Users/admin/Work/PAF/projects/pumba/data/fasta/a.fasta"
-output_path = "/Users/admin/tmp/datamining_pumba/scop/raw/"
+#input_file = "/Users/rmylonas/Work/PAF/projects/pumba/data/fasta/tiny_UP000005640_9606.fasta"
+input_file = "/Users/rmylonas/Work/PAF/projects/pumba/data/fasta/a.fasta"
+output_path = "/Users/rmylonas/tmp/datamining_pumba/scop/raw/"
 
 # parse fasta
 fasta_sequences = SeqIO.parse(open(input_file),'fasta')
@@ -37,7 +37,7 @@ def write_res(filepath, res):
 
 
 # connect to browser
-browser = webdriver.Firefox(executable_path='/Users/admin/Applications/geckodriver')
+browser = webdriver.Firefox(executable_path='/Users/rmylonas/Applications/geckodriver')
 
 for fasta in fasta_sequences:
     name, sequence = fasta.id, str(fasta.seq)

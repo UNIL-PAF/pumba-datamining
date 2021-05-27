@@ -6,7 +6,7 @@ neg_label <- "low int"
 pos_label <- "high int"
 
 # load results
-res_path <- ("/Users/admin/tmp/datamining_pumba/results/new_peakdetection_1569505896.27378.RData")
+res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/new_peakdetection_1569505896.27378.RData")
 load(res_path)
 
 

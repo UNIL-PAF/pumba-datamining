@@ -12,6 +12,7 @@ get_uniprot_xml <- function(protein_ac){
   if(file.exists(cache_path)){
     xml_data <- xml_ns_strip(read_xml(cache_path))
   }else{
+    print(paste0("Download ", protein_ac))
     url_path <- paste0(uniprot_url, protein_ac, uniprot_url_suffix)
     raw_xml_data <- tryCatch(read_xml(url_path), 
                              error=function(cond){
@@ -32,6 +33,14 @@ get_locations <- function(uniprot_xml){
   locations <- xml_find_all(uniprot_xml, ".//location")
   locations <- locations[! is.na(xml_attr(locations, "evidence"))]
   unique(xml_text(locations))
+}
+
+
+# get transmembrane regions
+get_nr_transmembranes <- function(uniprot_xml){
+  features <- xml_find_all(uniprot_xml, ".//feature")
+  sel_features <- features[xml_attr(features, "type") == "transmembrane region"]
+  length(sel_features)
 }
 
 

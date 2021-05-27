@@ -5,7 +5,7 @@ library(Peptides)
 rm(list=ls())
 
 # results
-res_path <- ("/Users/admin/tmp/datamining_pumba/results/")
+res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/")
 res_name <- "homodimers_"
 
 # internal library

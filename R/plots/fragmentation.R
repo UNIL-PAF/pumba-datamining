@@ -3,7 +3,7 @@ library(ggplot2)
 rm(list=ls())
 
 # load results
-res_path <- ("/Users/admin/tmp/datamining_pumba/results/homodimers_1569571862.15343.RData")
+res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/homodimers_1569571862.15343.RData")
 load(res_path)
 
 sample <- "HCT"

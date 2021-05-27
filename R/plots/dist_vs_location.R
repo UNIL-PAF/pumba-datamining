@@ -6,7 +6,7 @@ rm(list=ls())
 location_term <- "mitochond"
 
 # load results
-res_path <- ("/Users/admin/tmp/datamining_pumba/results/hydrophopicity_1569510778.62979.RData")
+res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/hydrophopicity_1569510778.62979.RData")
 load(res_path)
 
 for(sample in names(results)){

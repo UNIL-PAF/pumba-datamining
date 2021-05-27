@@ -4,14 +4,14 @@ library(Peptides)
 
 rm(list=ls())
 
-data_root <- "/Users/admin/tmp/pumba/"
-data_cache <- "/Users/admin/tmp/datamining_pumba/"
+data_root <- "/Users/rmylonas/tmp/pumba/"
+data_cache <- "/Users/rmylonas/tmp/datamining_pumba/"
 
 sel_datasets <- c("1559132129057") #NULL #c("1559132129057")
 nr_proteins <- 1000
 
 # used to get the charge for each protein
-fasta_seq_path <- "/Users/admin/Work/PAF/projects/pumba/data/fasta/20170609_UP000005640_9606.csv"
+fasta_seq_path <- "/Users/rmylonas/Work/PAF/projects/pumba/data/fasta/20170609_UP000005640_9606.csv"
 fasta_seqs <- read.csv(file=fasta_seq_path)
 
 # get all datasets

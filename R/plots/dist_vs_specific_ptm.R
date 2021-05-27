@@ -8,7 +8,7 @@ neg_label <- paste0("no ", ptm)
 pos_label <- ptm
 
 # load results
-res_path <- ("/Users/admin/tmp/datamining_pumba/results/scop1568714129.32455.RData")
+res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/scop1568714129.32455.RData")
 load(res_path)
 
 for(sample in names(results)){

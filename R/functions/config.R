@@ -2,10 +2,10 @@
 # pathes
 #########################
 # pumba backend data
-data_root <- "/Users/admin/tmp/pumba/"
+data_root <- "/Users/rmylonas/tmp/pumba/"
 
 # cache 
-data_cache <- "/Users/admin/tmp/datamining_pumba/"
+data_cache <- "/Users/rmylonas/tmp/datamining_pumba/"
 
 
 #########################

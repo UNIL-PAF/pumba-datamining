@@ -1,69 +1,100 @@
 library(httr)
+library(RCurl)
+library(RJSONIO)
 library(ggplot2)
 library(Peptides)
 
 rm(list=ls())
 
 # results
-res_path <- ("/Users/admin/tmp/datamining_pumba/results/well_behaved/well_behaved_prots.txt")
+res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_210525.txt")
 
-# threshold pour l'intensité totale pour cette protein
-good_peak_threshold <- 0.8
+# parameters
+organism_param <- "human"
+db_param <- "UP000005640_canonical_plus_splices_16092020"
 
 # internal library
 source("./R/functions/all_functions.R")
 
-all_datasets <- get_all_datasets()
+all_datasets <- get_all_datasets(organism=organism_param)
 
 #nr_proteins <- 100
-#plot_proteins <- c() #"H7C417", "O60307", "E9PLN8", "E7EVH7", "A2RTX5", "A2RRP1", "A0A0A6YYH1")
+#plot_proteins <- c("A0A096LP01", "P0DPI2", "A0A0B4J2D5")
 
 all_protein_groups <- get_all_protein_groups(all_datasets)
 
 # just take the protein_acs from the first dataset
-protein_acs <- get_protein_acs(all_protein_groups[[1]])
+# protein_acs <- get_protein_acs(all_protein_groups[[1]])
+
+# take all protein_acs
+protein_acs <-get_all_protein_acs(all_protein_groups)
 
 # loop over all proteins
 nr_prot_loop <- if(! exists("nr_proteins")) length(protein_acs) else nr_proteins
 
 dataset_ids <- get_dataset_ids(all_datasets)
 
-all_protein_groups <- get_all_protein_groups(all_datasets)
-
-res_table <- data.frame(stringsAsFactors=FALSE)
-valid_slices_array <- array()
-valid_entries <- 0
-invalid_entries <- 0
+# prepare the results table
+# fields:
+#
+dataset_names <- unlist(lapply(all_datasets, function(x){x$name}))
+dataset_samples <- unlist(lapply(all_datasets, function(x){x$sample}))
+column_sample_names <- paste0(dataset_samples, ".", dataset_names)
+column_field_names <- c("is.first.ac", "nr.peaks", "nr.peptides", "peak_masses", "peak_ints", "highest.is.closest", 
+                        "highest.peak.int", "highest.peak.int.perc", "highest.peak.mass",
+                        "highest.peak.start", "highest.peak.end", "closest.peak.int",
+                        "closest.peak.int.perc", "closest.peak.mass", "closest.peak.start",
+                        "closest.peak.end")
+column_field_size <- length(column_field_names)
+column_field_types <- c(logical(), numeric(), logical(),
+                        numeric(), numeric(), numeric(),
+                        numeric(), numeric(), numeric(),
+                        numeric(), numeric(), numeric(),
+                        numeric())
+column_names <- unlist(lapply(column_sample_names, function(x){paste0(x, ".", column_field_names)}))
+column_names <- c("protein.ac", "theo.mass", column_names)
+res_table = data.frame(matrix(ncol=length(column_names),nrow=0, dimnames=list(NULL, column_names)))
 
 for(k in 1:nr_prot_loop){
   
   print(paste0(k, " of ", nr_prot_loop))
   protein_ac <- protein_acs[k]
   
-  # theo mol weight
-  protein <- all_protein_groups[[1]][k,]
-  theo_mol_weight <- as.numeric(protein$Mol..weight..kDa.)
+  # skip proteins containing the term "REV"
+  if(grepl("REV", protein_ac, fixed=TRUE)) next
   
-  #k <- which(protein_acs == "P02786")
-  row <- data.frame(protein_ac, theo_mol_weight)
+  theo_mol_weight <- get_theo_mass(protein_ac, db_param)/1000
   
-  valid_entry <- TRUE
+  one_row = data.frame(matrix(ncol=length(column_names),nrow=1, dimnames=list(NULL, column_names)))
+  one_row[1] <- protein_ac
+  one_row[2] <- theo_mol_weight
   
   for(i in 1:length(dataset_ids)){
   
+    # column index in the row
+    column_i <- column_field_size * (i-1) + 3
+    
     dataset_id <- dataset_ids[i]
+    sample_name <- all_datasets[[i]]$sample
+    repl_name <- all_datasets[[i]]$name
     
     # get merged data from backend or cache
     protein_merges <- get_single_protein_merge(protein_ac, dataset_id)
     
     # for some datasets the protein is not detected
-    if(length(protein_merges) == 0){
-      valid_entry <- FALSE
-      break
+    if(length(protein_merges$proteinMerges) == 0){
+      next
     }
     
     # since we load only one dataset at the time there is only 1 list
-    protein_merge <- protein_merges[[1]]
+    protein_merge <- protein_merges$proteinMerges[[1]]
+    
+    if(length(protein_merge$proteins) > 1){
+      print("multiple proteins!!!")
+      print(protein_ac)
+      print(length(protein_merge$proteins))
+      cat(file="/Users/rmylonas/tmp/multi_proteins.txt", append=TRUE, paste0(protein_ac, ", ", repl_name, "\n"))
+    }
     
     mass <- get_masses(protein_merge)
     ints <- get_ints(protein_merge)
@@ -71,67 +102,90 @@ for(k in 1:nr_prot_loop){
     # get the indexes of intensities corresponding to a peak (see "config.R" for thresholds)
     peak_idxs <- get_peak_indexes(ints)
     
-    # just skip with a warning if no peak was detected
-    if(length(peak_idxs) < 1){
-      valid_entry <- FALSE
-      #warning(paste0("Could not find any peak in [", protein_ac, "]."))
-      break
+    # only fill the columns if peaks where found (otherwise it stays NA's)
+    if(length(peak_idxs) >= 1){
+      if(grep(protein_ac, protein_merge$proteins[[1]]$proteinIDs) > 1){
+        is_first_ac <- FALSE
+      }else{
+        is_first_ac <- TRUE
+      }
+      one_row[column_i] <- is_first_ac
+      
+      nr_of_peaks <- length(peak_idxs)
+      one_row[column_i + 1] <- nr_of_peaks
+      
+      nr_peptides <- length(protein_merge$proteins[[1]]$peptides)
+      one_row[column_i + 2] <- nr_peptides
+      
+      peaks_masses <- mass[peak_idxs]
+      peaks_ints <- ints[peak_idxs]
+      
+      one_row[column_i + 3] <- paste(round(peaks_masses, digits=2), collapse = ";")
+      one_row[column_i + 4] <- paste(peaks_ints, collapse = ";")
+      
+      
+      highest_peak <- which(peaks_ints == max(peaks_ints, na.rm=TRUE))
+      highest_peak_idx <- peak_idxs[highest_peak]
+      highest_peak_limits <- get_peak_limits(ints, highest_peak_idx)
+      highest_peak_limits_masses <- mass[highest_peak_limits]
+      highest_peak_int <- peaks_ints[highest_peak]
+      highest_peak_mass <- peaks_masses[highest_peak]
+      highest_peak_dist <- abs(theo_mol_weight - highest_peak_mass)
+      
+      # find the correct limits in the slices
+      log_mass_fits <- all_datasets[[i]]$massFitResult$massFits  
+      mass_fits <- 10^(unlist(log_mass_fits))
+      
+      slice_ints <- unlist(protein_merge$proteins[[1]]$intensities)
+      highest_valid_slices <- which(mass_fits >= highest_peak_limits_masses[1] & mass_fits <= highest_peak_limits_masses[2])
+      highest_slice_ints_sum <- sum(slice_ints[highest_valid_slices])
+      highest_peak_int_perc <- highest_slice_ints_sum / sum(slice_ints)
+      
+      one_row[column_i + 6] <- highest_peak_int
+      one_row[column_i + 7] <- highest_peak_int_perc
+      one_row[column_i + 8] <- highest_peak_mass
+      one_row[column_i + 9] <- highest_peak_limits_masses[1]
+      one_row[column_i + 10] <- highest_peak_limits_masses[2]
+      
+      peak_theo_dists <- abs(theo_mol_weight - peaks_masses)
+      closest_peak <- which(peak_theo_dists == min(peak_theo_dists, na.rm=TRUE))
+      closest_peak_idx <- peak_idxs[closest_peak]
+      closest_peak_limits <- get_peak_limits(ints, closest_peak_idx)
+      closest_peak_limits_masses <- mass[closest_peak_limits]
+      closest_peak_int <- peaks_ints[closest_peak]
+      closest_peak_mass <- peaks_masses[closest_peak]
+      closest_peak_dist <- abs(theo_mol_weight - closest_peak_mass)
+      
+      highest_is_closest <- highest_peak == closest_peak
+      one_row[column_i + 5] <- highest_is_closest
+      
+      one_row[column_i + 11] <- closest_peak_int
+      
+      closest_valid_slices <- which(mass_fits >= closest_peak_limits_masses[1] & mass_fits <= closest_peak_limits_masses[2])
+      closest_slice_ints_sum <- sum(slice_ints[closest_valid_slices])
+      closest_peak_int_perc <- closest_slice_ints_sum / sum(slice_ints)
+      one_row[column_i + 12] <- closest_peak_int_perc
+      one_row[column_i + 13] <- closest_peak_mass
+      one_row[column_i + 14] <- closest_peak_limits_masses[1]
+      one_row[column_i + 15] <- closest_peak_limits_masses[2]
+    
+      
     }
     
-    peaks_masses <- mass[peak_idxs]
-    peaks_ints <- ints[peak_idxs]
-    
-    highest_peak <- which(peaks_ints == max(peaks_ints, na.rm=TRUE))
-    highest_peak_idx <- peak_idxs[highest_peak]
-    
-    peak_limits <- get_peak_limits(ints, highest_peak_idx)
-    peak_limits_masses <- mass[peak_limits]
-  
-    # find the correct limits in the slices
-    log_mass_fits <- all_datasets[[i]]$massFitResult$massFits  
-    mass_fits <- 10^(unlist(log_mass_fits))
-    
-    # find the slices which lie within the limits
-    valid_slices <- which(mass_fits >= peak_limits_masses[1] & mass_fits <= peak_limits_masses[2])
-    
-    # check if this makes 80% of the total intensity
-    slice_ints <- unlist(protein_merge$proteins[[1]]$intensities)
-    slice_ints_sum <- sum(slice_ints[valid_slices])
-    good_peak <- (slice_ints_sum / sum(slice_ints)) > good_peak_threshold
-    if(! good_peak){
-      valid_entry <- FALSE
-      #warning(paste0("Bad peak for protein [", protein_ac, "] in dataset [", paste(all_datasets[[i]]$sample, all_datasets[[i]]$name, sep=".")  ,"]."))
-      #warning(paste0("percentage was [", (slice_ints_sum / sum(slice_ints)) , "]"))
-      break
-    }
-    
-    # get the mass of the peak
-    slice_mass <- mass_fits[valid_slices[slice_ints[valid_slices] == max(slice_ints[valid_slices])]]
-  
-    nr_valid_slices <- length(valid_slices)
-    valid_slices_array[nr_valid_slices] <- if(is.na(valid_slices_array[nr_valid_slices])) 1 else (valid_slices_array[nr_valid_slices] + 1)
-    
-    row[(i-1)*2+3] <- slice_mass
-    row[(i-1)*2+4] <- slice_ints_sum
   }
-    
-  if(valid_entry){
-    names(row) <- NA
-    res_table <- rbind(res_table, row)
-    valid_entries <- valid_entries + 1
-  }else{
-    invalid_entries <- invalid_entries + 1
-  }
+  
+  res_table <- rbind(res_table, one_row)
+  
+  # if(protein_ac %in% plot_proteins){
+  #   ## plot the merge curve, the peaks and the distances
+  #   peak_dists_perc <- (peaks_masses / theo_mol_weight) - 1
+  #   plot(mass, ints, type="l", main=protein_ac)
+  #   abline(v=theo_mol_weight, col="blue")
+  #   points(mass[peak_idxs], ints[peak_idxs], col="red")
+  #   #text(mass[peak_idxs], ints[peak_idxs], labels=(round(peak_dists_perc, digits = 2)), col="red", pos=4)
+  # }
   
 } 
-
-# get the sample names
-sample_names <- unlist(lapply(all_datasets, function(d){
-  sample_name <- paste(d$sample, d$name, sep=".")
-  c(paste(sample_name, "mass", sep="."), paste(sample_name, "int", sep="."))
-}))
-
-names(res_table) <- c("protein.ac", "theo.mol.weight", sample_names)
 
 # write thable
 write.table(res_table, file = res_path, sep = "\t", row.names = FALSE)

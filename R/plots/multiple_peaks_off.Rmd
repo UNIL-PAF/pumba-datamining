@@ -1,0 +1,93 @@
+---
+title: "Proteins which elute differently then expecteed"
+author: "RM"
+date: "11/24/2019"
+output: html_document
+---
+
+```{r message=FALSE, echo=FALSE, warning=FALSE}
+suppressPackageStartupMessages(library("ggplot2"))
+
+# load results
+path <- ("/Users/rmylonas/tmp/datamining_pumba/results/homodimers_1569571862.15343.RData")
+load(path)
+
+# load fasta file
+fasta_seq_path <- "/Users/rmylonas/Work/PAF/projects/pumba/data/fasta/20170609_UP000005640_9606_with_headers.csv"
+fasta_seqs <- read.csv(file=fasta_seq_path)
+
+sample <- "HCT"
+res <- results[[sample]]
+
+show_mass_range <- c(10, 300)
+
+peak_selection <- "closest_peak_masses" #"highest_peak_masses"
+peak_selection_term <- "CLOSEST" # "HIGHEST"
+```
+
+### Data processing
+- Data is extracted from Pumba
+- Peaks are detected
+- Data is annotated from additional sources (e.g. UniProt, SCOP)
+
+### Peak detection
+- Peaks below an absolute normalised intensity of 1e-08 are ignored.
+- Only peaks >= 10% compared to strongest peak are retained.
+- In between adjacent peaks the curve has to go through <= 80% of last peak, otherwise only the strongest peak is retained.  
+
+## Proteins which migrated far away from theoretical mass
+List of proteins with closest peak at more then 10kDa from theoretical mass.
+Results are ordered by protein intensity.
+
+```{r echo=FALSE, warning=FALSE}
+  abs_peak_distances <- apply(res, 1, function(r){
+    masses <- as.numeric(strsplit(as.character(r['peak_masses']), ",")[[1]])
+    min(abs(masses - as.numeric(r['theo_weights'])))
+  })
+
+  flt <- res[abs_peak_distances > 10, ]
+  flt <- flt[order(flt$prot_intensities, decreasing = TRUE),]
+  
+  # set the limits
+  # summary(flt$theo_weights)
+  # max(apply(flt, 1, function(r){  masses <- as.numeric(strsplit(as.character(r['peak_masses']), ",")[[1]]);  max(masses)}))
+  # min(apply(flt, 1, function(r){  masses <- as.numeric(strsplit(as.character(r['peak_masses']), ",")[[1]]);  min(masses)}))
+    # max(apply(flt, 1, function(r){  masses <- as.numeric(strsplit(as.character(r['peak_intensities']), ",")[[1]]);  max(masses)}))
+  # min(apply(flt, 1, function(r){  masses <- as.numeric(strsplit(as.character(r['peak_intensities']), ",")[[1]]);  min(masses)}))
+  
+  
+  mass_limits <- c(5.5, 710)
+  int_limits <- c(1e-8, 3e-2)
+  
+  for(i in 1:nrow(flt)){
+    l <- flt[i,]
+    l$peak_masses
+    masses <- as.numeric(strsplit(as.character(l$peak_masses), ",")[[1]])
+    ints <- as.numeric(strsplit(as.character(l$peak_intensities), ",")[[1]])
+    
+    plot(1, type="n", xlab="", ylab="", xlim=mass_limits, ylim=int_limits, main=l$protein_acs, log="xy")
+    # plot theo mass
+    abline(v=l$theo_weights, col="blue")
+    text(x=l$theo_weights, y=int_limits[1], col="blue", labels=round(l$theo_weights), adj=c(0.01,1))
+    for(k in 1:length(ints)){
+      segments(masses[k], 1e-8, masses[k], ints[k], col="red")
+      points(x=masses[k], y=ints[k], col="red")
+      text(x=masses[k], y=ints[k], col="red", labels=round(masses[k]), adj=c(0.01,0.01))
+    }
+    
+    print(paste0("Protein AC: ", l$protein_acs))
+    print(paste0("Fasta header:", fasta_seqs$header[as.character(fasta_seqs$ac) == as.character(l$protein_acs)]))
+    print(paste0("Intensity: ", l$prot_intensities))
+    print(paste0("Theo mol weight: ", l$theo_weights))
+    print(paste0("PTMs: ", l$ptms))
+    print(paste0("Signal pep: ", l$signal_peps))
+    print(paste0("Glycosylations: ", l$glycosylations))
+    print(paste0("Locations: ", l$locations))
+    print(paste0("pIs: ", l$pIs))
+    
+  }
+
+```
+
+
+

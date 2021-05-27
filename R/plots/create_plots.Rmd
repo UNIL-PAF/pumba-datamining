@@ -9,7 +9,7 @@ output: html_document
 suppressPackageStartupMessages(library("ggplot2"))
 
 # load results
-res <- path <- ("/Users/admin/tmp/datamining_pumba/results/homodimers_1569571862.15343.RData")
+res <- path <- ("/Users/rmylonas/tmp/datamining_pumba/results/homodimers_1569571862.15343.RData")
 load(res <- path)
 
 sample <- "HCT"
@@ -298,7 +298,7 @@ print(p)
 - Keep entries with E-value <= 0.001.
 
 ```{r message=FALSE, echo=FALSE, warning=FALSE}
-scop_classes <- read.csv("/Users/admin/Work/PAF/projects/pumba/data/datamining/scop/SCOP_classes.csv")
+scop_classes <- read.csv("/Users/rmylonas/Work/PAF/projects/pumba/data/datamining/scop/SCOP_classes.csv")
 
 for(scop_class_short in scop_classes$class){
   scop_class_name <- as.character(scop_classes$name[scop_classes$class == scop_class_short])

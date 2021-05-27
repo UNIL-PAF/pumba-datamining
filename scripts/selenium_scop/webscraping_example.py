@@ -9,8 +9,8 @@ import time
 #option = webdriver.ChromeOptions()
 #option.add_argument(" — incognito")
 
-#browser = webdriver.Firefox(executable_path='/Users/admin/Applications/chromedriver', options=option)
-browser = webdriver.Firefox(executable_path='/Users/admin/Applications/geckodriver')
+#browser = webdriver.Firefox(executable_path='/Users/rmylonas/Applications/chromedriver', options=option)
+browser = webdriver.Firefox(executable_path='/Users/rmylonas/Applications/geckodriver')
 
 browser.get('http://phosphatome.net/blast-scop/blast.html')
 

@@ -1,8 +1,8 @@
 #! /usr/bin/perl
 
 
-my $res_path = "/Users/admin/Work/PAF/projects/pumba/data/datamining/scop/orig/";
-my $csv_ac_file = "/Users/admin/Work/PAF/projects/pumba/data/fasta/20170609_UP000005640_9606.csv";
+my $res_path = "/Users/rmylonas/Work/PAF/projects/pumba/data/datamining/scop/orig/";
+my $csv_ac_file = "/Users/rmylonas/Work/PAF/projects/pumba/data/fasta/20170609_UP000005640_9606.csv";
 my $threshold = 0.001;
 
 open (CSV, $csv_ac_file) or die "canooot open file\n";
