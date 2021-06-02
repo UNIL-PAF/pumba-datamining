@@ -87,7 +87,7 @@ nr.peak.cols <- grep("U2OS.+.nr.peaks", colnames(res_table))
 nr.peak.means <- apply(res_table[,nr.peak.cols],1,function(x){mean(x, na.rm=TRUE)})
 sum(nr.peak.means > 0, na.rm = TRUE)
 # 6414
-
+# 4327
 
 sum(res_table$U2OS.9508.nr.peaks > 0, na.rm = TRUE)
 
