@@ -7,7 +7,7 @@ library(Peptides)
 rm(list=ls())
 
 # results
-res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_210525.txt")
+res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_210608.txt")
 
 # parameters
 organism_param <- "human"
@@ -40,19 +40,19 @@ dataset_ids <- get_dataset_ids(all_datasets)
 dataset_names <- unlist(lapply(all_datasets, function(x){x$name}))
 dataset_samples <- unlist(lapply(all_datasets, function(x){x$sample}))
 column_sample_names <- paste0(dataset_samples, ".", dataset_names)
-column_field_names <- c("is.first.ac", "nr.peaks", "nr.peptides", "peak_masses", "peak_ints", "highest.is.closest", 
+column_field_names <- c("is.first.ac", "nr.peaks",
+                        "nr.peptides", "peak_masses", "peak_ints", "secondary_peak_masses", "highest.is.closest", 
                         "highest.peak.int", "highest.peak.int.perc", "highest.peak.mass",
                         "highest.peak.start", "highest.peak.end", "closest.peak.int",
                         "closest.peak.int.perc", "closest.peak.mass", "closest.peak.start",
                         "closest.peak.end")
 column_field_size <- length(column_field_names)
-column_field_types <- c(logical(), numeric(), logical(),
-                        numeric(), numeric(), numeric(),
-                        numeric(), numeric(), numeric(),
-                        numeric(), numeric(), numeric(),
-                        numeric())
+# column_field_types <- c(logical(), numeric(), character(), character(), logical(),
+#                         numeric(), numeric(), numeric(),
+#                         numeric(), numeric(), numeric(),
+#                         numeric(), numeric(), numeric(), ch)
 column_names <- unlist(lapply(column_sample_names, function(x){paste0(x, ".", column_field_names)}))
-column_names <- c("protein.ac", "theo.mass", column_names)
+column_names <- c("protein.ac", "theo.mass", "pI", "hydrophobicity", column_names)
 res_table = data.frame(matrix(ncol=length(column_names),nrow=0, dimnames=list(NULL, column_names)))
 
 for(k in 1:nr_prot_loop){
@@ -63,16 +63,23 @@ for(k in 1:nr_prot_loop){
   # skip proteins containing the term "REV"
   if(grepl("REV", protein_ac, fixed=TRUE)) next
   
-  theo_mol_weight <- get_theo_mass(protein_ac, db_param)/1000
+  seq_object <- get_seq(protein_ac, db_param)
+  theo_mol_weight <- seq_object$molWeight/1000
+  
+  # sequence properties
+  my_pI <- pI(seq_object$sequence, pKscale = "EMBOSS")
+  my_hydrophopicity <- hydrophobicity(seq_object$sequence, scale = "HoppWoods")
   
   one_row = data.frame(matrix(ncol=length(column_names),nrow=1, dimnames=list(NULL, column_names)))
   one_row[1] <- protein_ac
   one_row[2] <- theo_mol_weight
+  one_row[3] <- my_pI
+  one_row[4] <- my_hydrophopicity
   
   for(i in 1:length(dataset_ids)){
   
     # column index in the row
-    column_i <- column_field_size * (i-1) + 3
+    column_i <- column_field_size * (i-1) + 5
     
     dataset_id <- dataset_ids[i]
     sample_name <- all_datasets[[i]]$sample
@@ -123,7 +130,6 @@ for(k in 1:nr_prot_loop){
       one_row[column_i + 3] <- paste(round(peaks_masses, digits=2), collapse = ";")
       one_row[column_i + 4] <- paste(peaks_ints, collapse = ";")
       
-      
       highest_peak <- which(peaks_ints == max(peaks_ints, na.rm=TRUE))
       highest_peak_idx <- peak_idxs[highest_peak]
       highest_peak_limits <- get_peak_limits(ints, highest_peak_idx)
@@ -131,6 +137,9 @@ for(k in 1:nr_prot_loop){
       highest_peak_int <- peaks_ints[highest_peak]
       highest_peak_mass <- peaks_masses[highest_peak]
       highest_peak_dist <- abs(theo_mol_weight - highest_peak_mass)
+      
+      secondary_peak_masses <- peaks_masses[-highest_peak]
+      one_row[column_i + 5] <- paste(round(secondary_peak_masses, digits=2), collapse = ";")
       
       # find the correct limits in the slices
       log_mass_fits <- all_datasets[[i]]$massFitResult$massFits  
@@ -141,11 +150,11 @@ for(k in 1:nr_prot_loop){
       highest_slice_ints_sum <- sum(slice_ints[highest_valid_slices])
       highest_peak_int_perc <- highest_slice_ints_sum / sum(slice_ints)
       
-      one_row[column_i + 6] <- highest_peak_int
-      one_row[column_i + 7] <- highest_peak_int_perc
-      one_row[column_i + 8] <- highest_peak_mass
-      one_row[column_i + 9] <- highest_peak_limits_masses[1]
-      one_row[column_i + 10] <- highest_peak_limits_masses[2]
+      one_row[column_i + 7] <- highest_peak_int
+      one_row[column_i + 8] <- highest_peak_int_perc
+      one_row[column_i + 9] <- highest_peak_mass
+      one_row[column_i + 10] <- highest_peak_limits_masses[1]
+      one_row[column_i + 11] <- highest_peak_limits_masses[2]
       
       peak_theo_dists <- abs(theo_mol_weight - peaks_masses)
       closest_peak <- which(peak_theo_dists == min(peak_theo_dists, na.rm=TRUE))
@@ -157,19 +166,17 @@ for(k in 1:nr_prot_loop){
       closest_peak_dist <- abs(theo_mol_weight - closest_peak_mass)
       
       highest_is_closest <- highest_peak == closest_peak
-      one_row[column_i + 5] <- highest_is_closest
+      one_row[column_i + 6] <- highest_is_closest
       
-      one_row[column_i + 11] <- closest_peak_int
+      one_row[column_i + 12] <- closest_peak_int
       
       closest_valid_slices <- which(mass_fits >= closest_peak_limits_masses[1] & mass_fits <= closest_peak_limits_masses[2])
       closest_slice_ints_sum <- sum(slice_ints[closest_valid_slices])
       closest_peak_int_perc <- closest_slice_ints_sum / sum(slice_ints)
-      one_row[column_i + 12] <- closest_peak_int_perc
-      one_row[column_i + 13] <- closest_peak_mass
-      one_row[column_i + 14] <- closest_peak_limits_masses[1]
-      one_row[column_i + 15] <- closest_peak_limits_masses[2]
-    
-      
+      one_row[column_i + 13] <- closest_peak_int_perc
+      one_row[column_i + 14] <- closest_peak_mass
+      one_row[column_i + 15] <- closest_peak_limits_masses[1]
+      one_row[column_i + 16] <- closest_peak_limits_masses[2]
     }
     
   }
