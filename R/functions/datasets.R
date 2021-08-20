@@ -99,7 +99,7 @@ get_all_protein_acs <- function(all_protein_groups){
 }
 
 # get merged data for a protein from the backend
-get_protein_merge <- function(protein_ac, sample){
+get_protein_merge <- function(protein_ac, sample="merges", organism="human"){
   # create the folder for the dataset if necessary
   dataset_cache_path <- paste0(data_cache, sample)
   if(! dir.exists(dataset_cache_path)) dir.create(dataset_cache_path)
@@ -110,12 +110,14 @@ get_protein_merge <- function(protein_ac, sample){
   if(file.exists(protein_cache_path)){
     load(protein_cache_path)
   }else{
-    protein_merge_get <- GET(paste0("http://localhost:9000/merge-protein/", protein_ac), query=list(dataSetsString=paste(dataset_ids, collapse=",")))
-    protein_merge <- content(protein_merge_get)
+    protein_merge_url <- paste0("http://localhost:9000/merge-protein/", protein_ac, "/organism/", organism)
+    protein_merge_get <- getURL(protein_merge_url)
+    protein_merge <- RJSONIO::fromJSON(protein_merge_get)
     save(protein_merge, file=protein_cache_path)
   }
   protein_merge
 }
+
 
 # get merged data for a protein from the backend
 get_single_protein_merge <- function(protein_ac, dataset_id){
