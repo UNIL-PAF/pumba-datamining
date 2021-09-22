@@ -7,7 +7,7 @@ library(Peptides)
 rm(list=ls())
 
 # results
-res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_210817.txt")
+res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_210922.txt")
 
 # parameters
 organism_param <- "human"
@@ -18,7 +18,7 @@ source("./R/functions/all_functions.R")
 
 all_datasets <- get_all_datasets(organism=organism_param)
 
-#nr_proteins <- 10
+#nr_proteins <- 100
 #plot_proteins <- c("A0A096LP01", "P0DPI2", "A0A0B4J2D5")
 
 all_protein_groups <- get_all_protein_groups(all_datasets)
@@ -96,6 +96,11 @@ for(k in 1:nr_prot_loop){
     
     # some samples don't have no results
     if(length(sel_protein_merge_id) == 0){
+      for(i in 1:length(sub_dataset_ids)){
+        # column index in the row
+        column_i <- column_field_size * (i-1) + column_j + sample_field_size
+      }
+      
       next
     }
     
@@ -129,9 +134,9 @@ for(k in 1:nr_prot_loop){
       # column index in the row
       column_i <- column_field_size * (i-1) + column_j + sample_field_size
       
-      dataset_id <- dataset_ids[i]
-      sample_name <- all_datasets[[i]]$sample
-      repl_name <- all_datasets[[i]]$name
+      dataset_id <- sub_dataset_ids[i]
+      #sample_name <- all_datasets[[i]]$sample
+      #repl_name <- all_datasets[[i]]$name
       
       # get merged data from backend or cache
       protein_merges <- get_single_protein_merge(protein_ac, dataset_id)
@@ -233,6 +238,13 @@ for(k in 1:nr_prot_loop){
   
   rm("column_i")
   res_table <- rbind(res_table, one_row)
+  
+  
+  if(class(res_table$U2OS.9052.highest.peak.mass) != "numeric"){
+    print("here")
+    print(k)
+    stop()
+  }
   
   # if(protein_ac %in% plot_proteins){
   #   ## plot the merge curve, the peaks and the distances
