@@ -7,7 +7,7 @@ library(Peptides)
 rm(list=ls())
 
 # results
-res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_210922.txt")
+res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_211005.txt")
 
 # parameters
 organism_param <- "human"
@@ -64,6 +64,7 @@ column_names <- c("protein.ac", "theo.mass", "pI", "hydrophobicity", column_name
 res_table = data.frame(matrix(ncol=length(column_names),nrow=0, dimnames=list(NULL, column_names)))
 
 for(k in 1:nr_prot_loop){
+  if(exists("column_i")) rm("column_i")
   
   print(paste0(k, " of ", nr_prot_loop))
   protein_ac <- protein_acs[k]
@@ -90,6 +91,8 @@ for(k in 1:nr_prot_loop){
   for(j in 1:length(samples)){
     
     sub_dataset_ids <- dataset_ids[dataset_samples == samples[j]]
+    sub_datasets <- all_datasets[dataset_samples == samples[j]]
+    
     column_j <- if(exists("column_i")) {column_i + column_field_size} else { sample_field_size * (j-1) + 5 }
     
     sel_protein_merge_id <- which(sample_protein_merge_names == samples[j])
@@ -195,7 +198,7 @@ for(k in 1:nr_prot_loop){
         one_row[column_i + 5] <- paste(round(secondary_peak_masses, digits=2), collapse = ";")
         
         # find the correct limits in the slices
-        log_mass_fits <- all_datasets[[i]]$massFitResult$massFits  
+        log_mass_fits <- sub_datasets[[i]]$massFitResult$massFits
         mass_fits <- 10^(unlist(log_mass_fits))
         
         slice_ints <- unlist(protein_merge$proteins[[1]]$intensities)
@@ -236,15 +239,7 @@ for(k in 1:nr_prot_loop){
     
   }
   
-  rm("column_i")
   res_table <- rbind(res_table, one_row)
-  
-  
-  if(class(res_table$U2OS.9052.highest.peak.mass) != "numeric"){
-    print("here")
-    print(k)
-    stop()
-  }
   
   # if(protein_ac %in% plot_proteins){
   #   ## plot the merge curve, the peaks and the distances
