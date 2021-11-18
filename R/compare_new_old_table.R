@@ -8,13 +8,13 @@ library(diffdf)
 rm(list=ls())
 
 # new table
-res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_211005.txt")
+res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_211118.txt")
 res_table <- read.table(file=res_path, sep="\t", header = TRUE)
 
 
 # load old table to compare
 #old_res_path <- "/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_210817.txt"
-old_res_path <- "/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_210618.txt"
+old_res_path <- "/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_211005.txt"
 old_res_table <- read.table(file=old_res_path, sep="\t", header = TRUE)
 
 # transform all logical columns
@@ -22,7 +22,7 @@ old_colnames <- colnames(old_res_table)
 
 
 
-for(k in 1:100){
+for(k in 948:1000){
   
   print(k)
   

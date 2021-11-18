@@ -6,9 +6,9 @@ library(Peptides)
 
 rm(list=ls())
 
-output_path <- "/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_211005_PTMs.txt"
+output_path <- "/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_211118_PTMs.txt"
 
-res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_211005.txt")
+res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_211118.txt")
 res_table <- read.table(file=res_path, sep="\t", header = TRUE)
 
 # internal library
