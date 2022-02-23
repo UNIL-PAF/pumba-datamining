@@ -16,7 +16,9 @@ get_peak_indexes <- function(ints){
     if(ints[i] > ints[i-1]){
       is_increasing <- TRUE
       current_threshold <- last_peak_int * peak_detection_zero_thresh
-      if(! passed_by_zero && ints[i-1] <= current_threshold) passed_by_zero <- TRUE
+      if(! passed_by_zero && ints[i-1] <= current_threshold){
+        passed_by_zero <- TRUE
+      }
     }else{
       if(is_increasing){
         if(ints[i-1] > peak_detection_int_thresh){
@@ -26,6 +28,7 @@ get_peak_indexes <- function(ints){
             passed_by_zero <- FALSE
           }else if(ints[i-1] > last_int){
             if(ints[i-1] > ints[peaks_idx[length(peaks_idx)]]){
+              last_peak_int <- ints[i-1]
               peaks_idx[length(peaks_idx)] <- i-1 
             }
           }

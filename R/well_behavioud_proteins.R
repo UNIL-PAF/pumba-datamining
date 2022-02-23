@@ -7,7 +7,7 @@ library(Peptides)
 rm(list=ls())
 
 # results
-res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_211118.txt")
+res_path <- ("/Users/rmylonas/tmp/datamining_pumba/results/well_behaved/pumba_human_proteins_220218.txt")
 
 # parameters
 organism_param <- "human"
