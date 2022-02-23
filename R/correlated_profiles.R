@@ -45,7 +45,8 @@ for(i in 1:nrow(peaks_table)){
   row <- peaks_table[i,]
   
   for(k in 1: length(all_datasets)){
-    dataset <- paste0(all_datasets[[k]]$sample, ".", all_datasets[[k]]$name)
+    #dataset <- paste0(all_datasets[[k]]$sample, ".", all_datasets[[k]]$name)
+    dataset <- paste0(all_datasets[[k]]$sample)
     
     protein_ac <- row$protein.ac
     theo_mass <- log10(row$theo.mass)
