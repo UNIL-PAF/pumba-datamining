@@ -51,7 +51,7 @@ all_protein_groups <- get_all_protein_groups(all_datasets)
 protein_acs <-get_all_protein_acs(all_protein_groups)
 
 # test proteins
-protein_acs <- c("Q16777", "P62979", "P63165", "P46060", "P11274",  "P00519")
+# protein_acs <- c("Q16777", "P62979", "P63165", "P46060", "P11274",  "P00519")
 
 dataset_names <- unlist(lapply(all_datasets, function(x){x$name}))
 dataset_samples <- unlist(lapply(all_datasets, function(x){x$sample}))
@@ -96,7 +96,8 @@ for(k in 1:nr_prot_loop){
     
     theo_peak_idx <- if(min_theo_dist <= max_theo_dist_thresh) min_theo_dist_idx else NA
 
-    if(length(sample_peak_idxs) == 0 || (length(sample_peak_idxs) == 1 && !is.na(theo_peak_idx))) next
+    #if(length(sample_peak_idxs) <= 1 || (length(sample_peak_idxs) == 2 && !is.na(theo_peak_idx))) next
+    if(length(sample_peak_idxs) <= 1) next
     
     sample_ints <- sel_theo_merged_prot$intensities
     
@@ -201,6 +202,8 @@ for(k in 1:length(samples)){
   this_matches <- data.frame()
   
    for(i in 1:(nrow(potential_peaks$entries)-1)){
+     print(paste0(sample_name, " - ", i, " of ", nrow(potential_peaks$entries)-1))
+     
      mass <- log10(potential_peaks$entries$mass[i])
      
      for(j in (i+1):nrow(potential_peaks$entries)){
@@ -234,5 +237,5 @@ for(k in 1:length(samples)){
   matches[[sample_name]] <- this_matches
 }
 
-matches[["K562"]]
-matches
+head(matches[["K562"]])
+
